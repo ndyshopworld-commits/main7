@@ -34,7 +34,12 @@ window.MODEL_PRELOADER_TEXTS = {
   data-loading-text="Custom loading text…"
   data-loading-subtext="Custom subtext"
   data-overlay-hint="Custom hint"
-  data-logo-text="MyBrand"></model-viewer>
+  data-logo-text="MyBrand"
+  data-lang="en"></model-viewer>
 ```
+
+The `data-lang` attribute forces the locale for that viewer (useful if page language is different).
+
+- **Debugging**: set `window.MODEL_PRELOADER_DEBUG = true` in the page to log the selected locale and texts in the console (useful for verifying TR/EN on demand).
 
 This centralizes localization and makes it easy to provide custom per-model messages without duplicating markup.

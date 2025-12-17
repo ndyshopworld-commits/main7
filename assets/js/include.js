@@ -27,7 +27,6 @@ document.addEventListener("DOMContentLoaded", () => {
     navStyle.textContent = `
       @media (max-width: 768px) {
         nav.main-nav {
-          display: none !important;
           position: absolute;
           top: calc(100% + 10px);
           right: 12px;
@@ -43,8 +42,23 @@ document.addEventListener("DOMContentLoaded", () => {
           z-index: 1001;
           backdrop-filter: blur(6px);
           -webkit-backdrop-filter: blur(6px);
+
+          /* slide-down effect */
+          display: flex;
+          opacity: 0;
+          transform: translateY(-8px);
+          transform-origin: top center;
+          transition: opacity .28s ease, transform .28s ease;
+          pointer-events: none;
+          overflow: hidden;
+          will-change: opacity, transform;
         }
-        nav.main-nav.nav-open { display: flex !important; }
+        nav.main-nav.nav-open {
+          opacity: 1;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
+
         nav.main-nav a {
           padding: 12px 18px;
           font-size: 14px;

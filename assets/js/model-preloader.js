@@ -19,7 +19,9 @@
 
   function getTextsForViewer(viewer){
     const global = (window.MODEL_PRELOADER_TEXTS && typeof window.MODEL_PRELOADER_TEXTS === 'object') ? window.MODEL_PRELOADER_TEXTS : {};
-    const docLang = (document.documentElement && document.documentElement.lang) ? document.documentElement.lang.split('-')[0] : 'tr';
+    // prefer per-viewer data-lang attribute, otherwise document lang
+    const viewerLang = viewer && viewer.dataset && viewer.dataset.lang ? viewer.dataset.lang.split('-')[0] : null;
+    const docLang = viewerLang || ((document.documentElement && document.documentElement.lang) ? document.documentElement.lang.split('-')[0] : 'tr');
     const base = Object.assign({}, DEFAULT_TEXTS[docLang] || DEFAULT_TEXTS.tr, global[docLang] || {});
 
     // allow per-viewer overrides via data- attributes
@@ -29,6 +31,11 @@
       overlayHint: viewer.dataset.overlayHint || base.overlayHint,
       logoText: viewer.dataset.logoText || base.logoText
     };
+
+    if (window.MODEL_PRELOADER_DEBUG) {
+      try { console.log('[model-preloader] locale:', docLang, 'texts:', texts); } catch(e){}
+    }
+
     return texts;
   }
 
