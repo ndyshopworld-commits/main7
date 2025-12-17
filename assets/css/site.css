@@ -224,35 +224,52 @@ footer.footer{
   max-width:1200px;
   margin:0 auto;
   display:grid;
-  grid-template-columns:1fr 1fr 1fr;
+  grid-template-columns:1fr 1fr;
   gap:20px;
-  text-align:center;
+  align-items:start;
+  text-align:left;
+}
+
+.footer-logo{
+  display:flex;
+  align-items:center;
+  gap:12px;
 }
 
 .footer-logo img{
-  width:52px;
-  height:52px;
+  width:64px;
+  height:64px;
   border-radius:999px;
   background:#0f172a;
-  padding:4px;
+  padding:6px;
+}
+
+.footer-logo p{
+  margin:0;
+  font-weight:600;
+  font-size:15px;
+  color:#e5e7eb;
 }
 
 /* соцсети в футере (PNG) */
 .footer-social{
   display:flex;
-  justify-content:center;
-  gap:14px;
+  justify-content:flex-start;
+  gap:12px;
   margin-bottom:6px;
+  align-items:center;
 }
 
 .footer-social img{
-  /* reduced by 25%: 22px -> 16.5px
-     further reduced by 25% per request: 16.5px -> 12.375px */
-  width:calc(16.5px * 0.75);
-  height:calc(16.5px * 0.75);
+  width:20px;
+  height:20px;
   display:block;
-  border-radius:calc(4.5px * 0.75);
-  transition:transform .15s,filter .2s;
+  border-radius:6px;
+  transition:transform .15s,filter .2s, box-shadow .18s;
+}
+
+.footer-social a:hover img{
+  box-shadow:0 6px 18px rgba(0,0,0,0.45), 0 0 12px rgba(0,194,255,0.06);
 }
 
 /* Ensure larger/square footer social variants are reduced consistently */
@@ -272,6 +289,59 @@ footer.footer{
 .footer-address p,
 .footer-center p{
   margin:2px 0;
+}
+
+/* Footer action buttons (4 boxes on the right) */
+.footer-actions{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:12px;
+  align-items:start;
+}
+
+.footer-action{
+  display:block;
+  padding:10px 12px;
+  border-radius:10px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  color:inherit;
+  text-decoration:none;
+  border:1px solid rgba(255,255,255,0.03);
+}
+
+.footer-action__title{ display:block; font-size:12px; color:#9ca3af; font-weight:600 }
+.footer-action__value{ display:block; font-size:14px; color:#e5e7eb; font-weight:700 }
+.footer-action__hint{ display:block; font-size:12px; color:#9ca3af }
+
+/* Hover / focus for actions */
+.footer-action:hover{ transform:translateY(-4px); box-shadow:0 10px 28px rgba(0,0,0,0.40); }
+
+/* =========================
+   FOOTER: MOBILE ADJUSTMENTS
+   ========================= */
+@media (max-width:768px){
+  .footer-grid{
+    grid-template-columns:1fr;
+    text-align:center;
+    gap:14px;
+  }
+
+  .footer-logo{ justify-content:center; }
+  .footer-logo img{ width:52px; height:52px; padding:4px }
+  .footer-logo p{ font-size:14px }
+
+  .footer-social{ justify-content:center; gap:16px }
+  .footer-social img{ width:28px; height:28px; border-radius:8px }
+
+  .footer-actions{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+  .footer-action{ padding:14px 16px; text-align:center }
+  .footer-action__title{ font-size:13px }
+  .footer-action__value{ font-size:15px }
+
+  footer.footer{ padding:22px 12px }
 }
 
 /* =========================
