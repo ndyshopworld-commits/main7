@@ -246,11 +246,22 @@ footer.footer{
 }
 
 .footer-social img{
-  width:22px;
-  height:22px;
+  /* reduced by 25%: 22px -> 16.5px
+     further reduced by 25% per request: 16.5px -> 12.375px */
+  width:calc(16.5px * 0.75);
+  height:calc(16.5px * 0.75);
   display:block;
-  border-radius:6px;
+  border-radius:calc(4.5px * 0.75);
   transition:transform .15s,filter .2s;
+}
+
+/* Ensure larger/square footer social variants are reduced consistently */
+.footer-social.footer-social--xl img,
+.footer-social.vertical.footer-social--xl img,
+.footer-social--xl img{
+  width:calc(16.5px * 0.75);
+  height:calc(16.5px * 0.75);
+  border-radius:calc(4.5px * 0.75);
 }
 
 .footer-social a:hover img{
@@ -677,14 +688,16 @@ model-viewer{
 
 .footer-social.vertical.footer-social--xl a{
   display:inline-flex;
-  width:66px;
-  height:66px;
+  /* reduced by 25%: 66px -> 49.5px */
+  width:49.5px;
+  height:49.5px;
 }
 
 .footer-social.vertical.footer-social--xl img{
-  width:66px;
-  height:66px;
-  border-radius:14px;  /* квадратные */
+  /* reduced by 25%: 66px -> 49.5px */
+  width:49.5px;
+  height:49.5px;
+  border-radius:10.5px;  /* квадратные */
   display:block;
   box-shadow:0 0 18px rgba(0,194,255,0.18);
   transition:transform .18s ease, filter .2s ease, box-shadow .25s ease;
