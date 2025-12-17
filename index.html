@@ -26,8 +26,18 @@
       color: var(--text-main);
     }
 
-    /* HEADER (общий стиль) */
+    /* Glass box for translucent backgrounds */
+    .glass-box {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      border-radius: 20px;
+      padding: 20px 24px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
 
+    /* HEADER (общий стиль) */
     .site-header {
       width: 100%;
       background: var(--header-bg);
@@ -278,7 +288,7 @@
 
     .category-card {
       max-width: 420px;
-      background: radial-gradient(circle at top, #020b1f 0%, #020617 45%, #020617 100%);
+      background: rgba(15, 23, 42, 0.65);
       border-radius: 24px;
       overflow: hidden;
       border: 1px solid rgba(148, 163, 184, 0.35);
@@ -460,7 +470,7 @@
 
     <!-- HERO -->
     <section class="hero">
-      <div>
+      <div class="glass-box">
         <h1>Geleceğinizi Uzaya Taşıyın!</h1>
         <p class="lead">
           Markanızı uzaya gönderiyoruz! Uzay temalı reklam ve eğitim çözümlerimizle,
@@ -491,10 +501,12 @@
 
     <!-- CATEGORIES -->
     <section>
-      <h2 class="section-title">Ürün Kategorileri</h2>
-      <p class="section-subtitle">
-        Uzayda markanızı tanıtmak için yenilikçi çözümler sunuyoruz.
-      </p>
+      <div class="glass-box">
+        <h2 class="section-title">Ürün Kategorileri</h2>
+        <p class="section-subtitle">
+          Uzayda markanızı tanıtmak için yenilikçi çözümler sunuyoruz.
+        </p>
+      </div>
 
       <div class="card-container">
         <div class="category-card">
@@ -523,11 +535,12 @@
 
     <!-- REFERENCES AND PARTNERS -->
     <section>
-      <h2 class="logo-section-title">Referanslarımız</h2>
+      <div class="glass-box">
+        <h2 class="logo-section-title">Referanslarımız</h2>
+      </div>
       <div class="logo-carousel">
         <div class="carousel-track">
           <!-- 25 placeholder logo cards -->
-          <!-- repeat 25 times -->
           <div class="logo-card"><img src="/assets/images/placeholder-logo1.jpg" alt="Logo placeholder"></div>
           <div class="logo-card"><img src="/assets/images/placeholder-logo2.jpg" alt="Logo placeholder"></div>
           <div class="logo-card"><img src="/assets/images/placeholder-logo3.jpg" alt="Logo placeholder"></div>
@@ -559,17 +572,19 @@
     </section>
 
     <section>
-      <h2 class="logo-section-title">Çözüm Ortaklarımız</h2>
+      <div class="glass-box">
+        <h2 class="logo-section-title">Çözüm Ortaklarımız</h2>
+      </div>
       <div class="logo-carousel">
         <div class="carousel-track">
           <!-- 8 placeholder logo cards -->
           <div class="logo-card"><img src="/assets/images/placeholder-logo27.jpg" alt="Logo placeholder"></div>
           <div class="logo-card"><img src="/assets/images/placeholder-logo28.jpg" alt="Logo placeholder"></div>
-          <div class="logo-card"><img src="/assets/images/placeholder-logo29.jpg" alt="Logo placeholder"></div>
+          <div class "logo-card"><img src="/assets/images/placeholder-logo29.jpg" alt="Logo placeholder"></div>
           <div class="logo-card"><img src="/assets/images/placeholder-logo30.jpg" alt="Logo placeholder"></div>
           <div class="logo-card"><img src="/assets/images/placeholder-logo31.jpg" alt="Logo placeholder"></div>
-          <div class="logo-card"><img src="/assets/images/placeholder-logo32.jpg" alt="Logo placeholder"></div>
-          <div class="logo-card"><img src="/assets/images/placeholder-logo33.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo32.jpg" alt "Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo33.jpg" alt "Logo placeholder"></div>
         </div>
       </div>
     </section>
