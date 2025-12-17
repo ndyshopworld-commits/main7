@@ -1,73 +1,85 @@
-document.addEventListener('DOMContentLoaded', function () {
-  // ---------- 1. КЛИК ПО WHATSAPP В ХЕДЕРЕ ----------
-  var waLink = document.querySelector('a[data-track="whatsapp"]');
-  if (waLink) {
-    waLink.addEventListener('click', function () {
-      // GA4
-      if (typeof gtag === 'function') {
-        gtag('event', 'click_whatsapp', {
-          event_category: 'contact',
-          event_label: 'header_whatsapp'
-        });
-      }
-      // Yandex.Metrika
+(function () {
+  // --- CONFIG ---
+  var YM_ID = 105726731;
+
+  function sendYM(goal, params) {
+    try {
       if (typeof ym === 'function') {
-        ym(105726731, 'reachGoal', 'click_whatsapp_header');
+        ym(YM_ID, 'reachGoal', goal, params || {});
       }
-    });
+    } catch (e) {}
   }
 
-  // ---------- 2. ОТПРАВКА ФОРМЫ ОБРАТНОЙ СВЯЗИ ----------
-  var contactForm = document.querySelector('form[data-track="contact_form"]');
-  if (contactForm) {
-    contactForm.addEventListener('submit', function () {
-      var formName = contactForm.getAttribute('data-form-name') || 'contact_basic';
-
-      // GA4
+  function sendGA(eventName, params) {
+    try {
       if (typeof gtag === 'function') {
-        gtag('event', 'submit_contact_form', {
-          event_category: 'contact',
-          event_label: formName
-        });
+        gtag('event', eventName, params || {});
       }
-
-      // Yandex.Metrika
-      if (typeof ym === 'function') {
-        ym(105726731, 'reachGoal', 'submit_contact_form');
-      }
-      // Ничего не мешаем: форма отправится как обычно
-    });
+    } catch (e) {}
   }
 
-  // ---------- 3. ПРОСМОТР 3D-МОДЕЛИ ----------
-  var modelViewer = document.querySelector('model-viewer[data-model-name]');
-  if (modelViewer) {
-    var sent = false;
-    var modelName = modelViewer.getAttribute('data-model-name') || 'unknown';
+  // Универсальная отправка "в обе"
+  function track(name, payload) {
+    payload = payload || {};
+    // Yandex goal names лучше короткие
+    sendYM(name, payload);
+    // GA4 event names лучше snake_case
+    sendGA(name, payload);
+  }
 
-    var send3DViewEvent = function () {
-      if (sent) return;
-      sent = true;
+  // 1) Клики по элементам с data-track
+  document.addEventListener('click', function (e) {
+    var el = e.target && e.target.closest ? e.target.closest('[data-track]') : null;
+    if (!el) return;
 
-      // GA4
-      if (typeof gtag === 'function') {
-        gtag('event', 'view_3d_model', {
-          event_category: '3d',
-          event_label: modelName
-        });
-      }
+    var key = el.getAttribute('data-track');
 
-      // Yandex.Metrika
-      if (typeof ym === 'function') {
-        ym(105726731, 'reachGoal', 'view_3d_model_' + modelName);
-      }
+    // Примеры полезных параметров
+    var payload = {
+      page_path: location.pathname
     };
 
-    // Когда модель загрузилась
-    modelViewer.addEventListener('load', send3DViewEvent);
+    if (key === 'whatsapp') {
+      payload.link_url = el.getAttribute('href') || '';
+      track('whatsapp_click', payload);
+      return;
+    }
 
-    // На всякий случай — если событие 'load' не сработало,
-    // всё равно отправим через 5 секунд после загрузки страницы
-    setTimeout(send3DViewEvent, 5000);
-  }
-});
+    // можно расширять под другие кнопки
+    track(key, payload);
+  }, true);
+
+  // 2) Отправка форм
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!form || !form.getAttribute) return;
+
+    var key = form.getAttribute('data-track');
+    if (!key) return;
+
+    var payload = {
+      page_path: location.pathname,
+      form_name: form.getAttribute('data-form-name') || ''
+    };
+
+    track('form_submit', payload);
+  }, true);
+
+  // 3) Просмотр 3D модели (как “показалась на экране”)
+  //    Самый простой вариант: считаем просмотр, когда model-viewer загрузил модель.
+  document.addEventListener('DOMContentLoaded', function () {
+    var mv = document.querySelector('model-viewer[data-track="model_view"]');
+    if (!mv) return;
+
+    var fired = false;
+    mv.addEventListener('load', function () {
+      if (fired) return;
+      fired = true;
+
+      track('model_view', {
+        page_path: location.pathname,
+        model_name: mv.getAttribute('data-model-name') || ''
+      });
+    });
+  });
+})();
