@@ -612,3 +612,43 @@ model-viewer{
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===================================
+   MODEL VIEWER: FUTURISTIC PRELOADER
+   Applied to any .viewer-wrapper containing a <model-viewer>
+   =================================== */
+.viewer-wrapper{ position:relative; width:100%; border-radius:12px; overflow:hidden; }
+.viewer-wrapper model-viewer{ display:block; width:100%; }
+
+.viewer-wrapper .model-loading-overlay{
+  position:absolute; inset:0; z-index:10;
+  display:flex; align-items:center; justify-content:center;
+  background: radial-gradient(circle at top, #020617 0%, #020617 45%, #000000 100%);
+  color: #e5e7eb; opacity:1; pointer-events:auto; overflow:hidden;
+  animation: overlayFadeIn 0.7s ease-out forwards;
+}
+.viewer-wrapper .model-loading-overlay::before{
+  content: ""; position:absolute; inset:-50%; background:linear-gradient(to bottom, transparent 0%, rgba(0,194,255,0.15) 50%, transparent 100%); animation:scanMove 3.5s linear infinite; mix-blend-mode:screen; pointer-events:none;
+}
+.viewer-wrapper .loader-card{ position:relative; padding:26px 26px 22px; border-radius:18px; background:rgba(15,23,42,0.85); box-shadow:0 0 30px rgba(0,194,255,0.45), 0 0 80px rgba(0,0,0,0.9); border:1px solid rgba(148,163,184,0.3); max-width:320px; width:90%; backdrop-filter:blur(10px); text-align:center; }
+.viewer-wrapper .loading-logo{ display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:18px; }
+.viewer-wrapper .loading-logo img{ width:34px; height:34px; border-radius:999px; background:#020617; padding:4px; box-shadow:0 0 18px rgba(0,194,255,0.6); }
+.viewer-wrapper .loading-logo span{ font-size:15px; letter-spacing:0.16em; text-transform:uppercase; color:#e5e7eb; opacity:0.9; }
+.viewer-wrapper .loader-orb{ position:relative; width:84px; height:84px; margin:0 auto 16px; }
+.viewer-wrapper .orb-ring{ position:absolute; inset:0; border-radius:50%; border:3px solid rgba(148,163,184,0.3); border-top-color:var(--accent, #00c2ff); border-right-color:rgba(56,189,248,0.9); animation:orbSpin 1.5s linear infinite; box-shadow:0 0 18px rgba(0,194,255,0.7), 0 0 32px rgba(37,99,235,0.4); }
+.viewer-wrapper .orb-core{ position:absolute; inset:18px; border-radius:50%; background:radial-gradient(circle, rgba(56,189,248,0.95), rgba(8,47,73,1)); box-shadow:0 0 24px rgba(56,189,248,0.9), 0 0 60px rgba(0,0,0,1); }
+.viewer-wrapper .loading-text{ font-size:15px; line-height:1.4; margin-bottom:14px; color:#e5e7eb; opacity:0.92; }
+.viewer-wrapper .loading-subtext{ font-size:12px; color:#9ca3af; margin-bottom:16px; }
+.viewer-wrapper .progress-shell{ position:relative; width:100%; }
+.viewer-wrapper .progress-bar{ width:100%; height:8px; background:radial-gradient(circle at top, #020617, #020617); border-radius:999px; overflow:hidden; border:1px solid rgba(148,163,184,0.5); }
+.viewer-wrapper .progress-fill{ width:0%; height:100%; background:linear-gradient(90deg, rgba(56,189,248,1), rgba(59,130,246,1), rgba(37,99,235,0.8)); box-shadow:0 0 16px rgba(56,189,248,0.9), 0 0 30px rgba(56,189,248,0.8); border-radius:inherit; transition:width 0.25s ease-out; }
+.viewer-wrapper .progress-glow{ position:absolute; inset:0; border-radius:999px; pointer-events:none; background:radial-gradient(circle at center, rgba(56,189,248,0.35), transparent 60%); opacity:0.0; animation:progressGlow 1.8s ease-in-out infinite; }
+.viewer-wrapper .overlay-hint{ margin-top:8px; font-size:11px; color:#9ca3af; letter-spacing:0.08em; text-transform:uppercase; }
+.viewer-wrapper .model-loading-overlay.fade-out{ animation: overlayFadeOut 0.5s ease-in forwards; pointer-events:none; }
+
+@keyframes overlayFadeIn{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:translateY(0);} }
+@keyframes overlayFadeOut{ from{ opacity:1; transform:translateY(0);} to{ opacity:0; transform:translateY(-4px);} }
+@keyframes orbSpin{ to{ transform:rotate(360deg);} }
+@keyframes glowPulse{ 0%,100%{ opacity:0.4; transform:scale(1);} 50%{ opacity:0.8; transform:scale(1.03);} }
+@keyframes scanMove{ 0%{ transform:translateY(-50%);} 100%{ transform:translateY(50%);} }
+@keyframes progressGlow{ 0%,100%{ opacity:0.1;} 50%{ opacity:0.5;} }
