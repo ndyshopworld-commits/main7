@@ -1,6 +1,39 @@
 // Automatically inject a viewer-wrapper overlay for every <model-viewer>
 (function(){
-  function createOverlayNode(){
+  // Default localized texts. Can be overridden by setting
+  // window.MODEL_PRELOADER_TEXTS = { en: {...}, tr: {...} }
+  const DEFAULT_TEXTS = {
+    tr: {
+      loadingText: 'Lütfen bekleyin, 3D model yükleniyor…',
+      loadingSubtext: 'Bu işlem internet hızınıza göre birkaç saniye sürebilir.',
+      overlayHint: 'AR & 3D deneyimi hazırlanıyor',
+      logoText: 'ALBASPACE'
+    },
+    en: {
+      loadingText: 'Please wait — 3D model is loading…',
+      loadingSubtext: 'This may take a few seconds depending on your connection.',
+      overlayHint: 'Preparing AR & 3D experience',
+      logoText: 'ALBASPACE'
+    }
+  };
+
+  function getTextsForViewer(viewer){
+    const global = (window.MODEL_PRELOADER_TEXTS && typeof window.MODEL_PRELOADER_TEXTS === 'object') ? window.MODEL_PRELOADER_TEXTS : {};
+    const docLang = (document.documentElement && document.documentElement.lang) ? document.documentElement.lang.split('-')[0] : 'tr';
+    const base = Object.assign({}, DEFAULT_TEXTS[docLang] || DEFAULT_TEXTS.tr, global[docLang] || {});
+
+    // allow per-viewer overrides via data- attributes
+    const texts = {
+      loadingText: viewer.dataset.loadingText || base.loadingText,
+      loadingSubtext: viewer.dataset.loadingSubtext || base.loadingSubtext,
+      overlayHint: viewer.dataset.overlayHint || base.overlayHint,
+      logoText: viewer.dataset.logoText || base.logoText
+    };
+    return texts;
+  }
+
+  function createOverlayNode(viewer){
+    const t = getTextsForViewer(viewer);
     const div = document.createElement('div');
     div.className = 'model-loading-overlay';
     div.setAttribute('aria-live','polite');
@@ -9,20 +42,20 @@
       <div class="loader-card">
         <div class="loading-logo">
           <img src="/assets/images/albaspace-logo.png" alt="AlbaSpace Logo" />
-          <span>ALBASPACE</span>
+          <span>${t.logoText}</span>
         </div>
 
         <div class="loader-orb"><div class="orb-ring"></div><div class="orb-core"></div></div>
 
-        <p class="loading-text">Lütfen bekleyin, 3D model yükleniyor…</p>
-        <p class="loading-subtext">Bu işlem internet hızınıza göre birkaç saniye sürebilir.</p>
+        <p class="loading-text">${t.loadingText}</p>
+        <p class="loading-subtext">${t.loadingSubtext}</p>
 
         <div class="progress-shell">
           <div class="progress-bar"><div class="progress-fill"></div></div>
           <div class="progress-glow"></div>
         </div>
 
-        <div class="overlay-hint">AR &amp; 3D deneyimi hazırlanıyor</div>
+        <div class="overlay-hint">${t.overlayHint}</div>
       </div>`;
     return div;
   }
@@ -38,7 +71,7 @@
     viewer.parentNode.insertBefore(wrapper, viewer);
     wrapper.appendChild(viewer);
 
-    const overlay = createOverlayNode();
+    const overlay = createOverlayNode(viewer);
     wrapper.insertBefore(overlay, viewer);
 
     const progressFill = overlay.querySelector('.progress-fill');
