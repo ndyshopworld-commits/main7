@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>AlbaSpace – Geleceğinizi Uzaya Taşıyın!</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    :root {
+      --header-bg: #020617;
+      --accent: #00c2ff;
+      --page-bg: #020617;
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #020617 url("/assets/images/space-bg.jpg") center/cover fixed no-repeat;
+      color: var(--text-main);
+    }
+
+    /* HEADER (общий стиль) */
+
+    .site-header {
+      width: 100%;
+      background: var(--header-bg);
+      color: #e5e7eb;
+      border-bottom: 1px solid #0f172a;
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: #e5e7eb;
+    }
+
+    .header-logo img {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      background: #0f172a;
+      padding: 4px;
+    }
+
+    .header-logo span {
+      font-weight: 600;
+      font-size: 16px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .main-nav {
+      margin-left: 20px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 14px;
+    }
+
+    .main-nav a {
+      color: #d1d5db;
+      text-decoration: none;
+      position: relative;
+      padding-bottom: 2px;
+    }
+
+    .main-nav a:hover {
+      color: #ffffff;
+    }
+
+    .main-nav a.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -2px;
+      width: 100%;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 999px;
+    }
+
+    .header-social {
+      display: flex;
+      gap: 14px;
+      margin-left: auto;
+      margin-right: 10px;
+    }
+
+    .social-icon-svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: #e5e7eb;
+      stroke-width: 1.6;
+      transition: stroke 0.2s, transform 0.15s;
+    }
+
+    .header-social a:hover .social-icon-svg,
+    .footer-social a:hover .social-icon-svg {
+      stroke: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .top-lang-switch {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .top-lang-switch a {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #4b5563;
+      background: #020617;
+      color: #e5e7eb;
+      text-decoration: none;
+    }
+
+    .top-lang-switch a.active {
+      background: #e5e7eb;
+      color: #020617;
+      font-weight: 600;
+    }
+
+    /* PAGE LAYOUT */
+
+    .home-main {
+      max-width: 1200px;
+      margin: 40px auto 70px;
+      padding: 32px 26px 40px;
+    }
+
+    /* HERO */
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+      gap: 32px;
+      align-items: center;
+      margin-bottom: 60px;
+    }
+
+    .hero h1 {
+      font-size: 42px;
+      line-height: 1.1;
+      margin-bottom: 10px;
+    }
+
+    .hero .lead {
+      font-size: 16px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      max-width: 480px;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .btn-primary,
+    .btn-outline {
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: 1px solid var(--accent);
+      font-size: 14px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #020617;
+      font-weight: 600;
+      box-shadow: 0 10px 28px rgba(56, 189, 248, 0.35);
+      animation: buttonGlow 2.8s ease-in-out infinite;
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--accent);
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.7);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 45px rgba(56, 189, 248, 0.6);
+      background: #29d2ff;
+    }
+
+    .btn-outline:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(56, 189, 248, 0.45);
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+    }
+
+    @keyframes buttonGlow {
+      0%, 100% {
+        box-shadow: 0 8px 22px rgba(56, 189, 248, 0.25);
+      }
+      50% {
+        box-shadow: 0 16px 40px rgba(56, 189, 248, 0.55);
+      }
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 30px;
+      margin-top: 10px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .hero-stats strong {
+      display: block;
+      font-size: 20px;
+      color: var(--accent);
+    }
+
+    .hero-image img {
+      width: 100%;
+      border-radius: 24px;
+      object-fit: cover;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.9);
+    }
+
+    /* CATEGORIES */
+
+    .section-title {
+      text-align: center;
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .section-subtitle {
+      text-align: center;
+      color: var(--text-muted);
+      margin-bottom: 30px;
+      font-size: 15px;
+    }
+
+    .card-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .category-card {
+      max-width: 420px;
+      background: radial-gradient(circle at top, #020b1f 0%, #020617 45%, #020617 100%);
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85);
+    }
+
+    .category-card img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .category-card h3 {
+      margin-bottom: 8px;
+      font-size: 18px;
+      color: #f9fafb;
+    }
+
+    .category-card p {
+      font-size: 14px;
+      color: #9ca3af;
+    }
+
+    .category-body {
+      padding: 18px 20px 22px;
+    }
+
+    /* КНОПКИ ВНУТРИ КАТЕГОРИЙ */
+
+    .category-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 18px;
+      margin-top: 14px;
+      border-radius: 999px;
+      border: 1px solid var(--accent);
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      background: var(--accent);
+      color: #020617;
+      box-shadow: 0 10px 28px rgba(56, 189, 248, 0.35);
+      position: relative;
+      overflow: hidden;
+      animation: buttonGlow 2.8s ease-in-out infinite;
+      transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+    }
+
+    .category-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 45px rgba(56, 189, 248, 0.6);
+      background: #29d2ff;
+    }
+
+    /* FOOTER */
+
+    footer.footer {
+      background: #111827;
+      color: #d1d5db;
+      padding: 34px 20px;
+      font-size: 14px;
+    }
+
+    .footer-grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      text-align: center;
+    }
+
+    .footer-logo img {
+      width: 60px;
+      height: 60px;
+      background: #0f172a;
+      padding: 4px;
+      border-radius: 999px;
+    }
+
+    .footer-social {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-bottom: 8px;
+    }
+
+    .footer-address p,
+    .footer-center p {
+      margin-bottom: 4px;
+    }
+
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+      .header-inner {
+        flex-wrap: wrap;
+      }
+      .main-nav {
+        margin-left: 0;
+        justify-content: center;
+      }
+      .header-social {
+        margin-left: 0;
+      }
+    }
+
+    /* Logo Carousels */
+    .logo-section-title {
+      text-align: center;
+      font-size: 24px;
+      margin-top: 60px;
+      margin-bottom: 16px;
+    }
+    .logo-carousel {
+      overflow-x: auto;
+      overflow-y: hidden;
+      margin-bottom: 40px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .carousel-track {
+      display: flex;
+      gap: 20px;
+      animation: slide-horizontal 13.3s ease-in-out infinite alternate;
+    }
+    .logo-card {
+      flex: 0 0 auto;
+      width: 100px;
+      height: 100px;
+      background: transparent;
+      border-radius: 0;
+      overflow: hidden;
+      border: none;
+      box-shadow: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo-card img {
+      width: 80%;
+      height: 80%;
+      object-fit: contain;
+      opacity: 0.6;
+    }
+    @keyframes slide-horizontal {
+      0% { transform: translateX(0); }
+      50% { transform: translateX(-10%); }
+      100% { transform: translateX(0); }
+    }
+  </style>
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script src="/assets/js/include.js" defer></script>
+  <script src="/assets/js/menu-toggle.js" defer></script>
+
+  <style>
+    .home-page .hero,
+    .home-page .card-container {
+      background: none;
+      border: none;
+      box-shadow: none;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  </style>
+</head>
+
+<body class="home-page">
+  <div data-include="/header-tr.html"></div>
+
+  <main class="home-main">
+
+    <!-- HERO -->
+    <section class="hero">
+      <div>
+        <h1>Geleceğinizi Uzaya Taşıyın!</h1>
+        <p class="lead">
+          Markanızı uzaya gönderiyoruz! Uzay temalı reklam ve eğitim çözümlerimizle,
+          markanıza benzersiz ve unutulmaz bir deneyim sunuyoruz.
+        </p>
+
+        <div class="hero-buttons">
+          <a href="hizmetler.html" class="btn-primary">Hizmetleri Keşfedin</a>
+          <a href="galeri.html" class="btn-outline">Galeriyi Görün</a>
+        </div>
+
+        <div class="hero-stats">
+          <div>
+            <strong>150+</strong>
+            Yenilikçi Çözümler
+          </div>
+          <div>
+            <strong>15</strong>
+            Uzay İlgili Başarı
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-image">
+        <img src="/assets/images/anasayfa-hero.jpg" alt="Uzay ufku ve uydu görüntüsü">
+      </div>
+    </section>
+
+    <!-- CATEGORIES -->
+    <section>
+      <h2 class="section-title">Ürün Kategorileri</h2>
+      <p class="section-subtitle">
+        Uzayda markanızı tanıtmak için yenilikçi çözümler sunuyoruz.
+      </p>
+
+      <div class="card-container">
+        <div class="category-card">
+          <img src="/assets/images/urun-uzay-tanitimi.jpg" alt="Uzay tanıtımı">
+          <div class="category-body">
+            <h3>Uzay Tanıtımı</h3>
+            <p>
+              Markanızı uzaya taşıyarak dikkat çekici ve fark yaratan kampanyalar oluşturuyoruz.
+            </p>
+            <a href="hizmetler.html" class="category-btn">Keşfet</a>
+          </div>
+        </div>
+
+        <div class="category-card">
+          <img src="/assets/images/urun-uzay-reklamlari.jpg" alt="Uzay reklamları">
+          <div class="category-body">
+            <h3>Uzay Reklamları</h3>
+            <p>
+              Gerçek uzay görüntüleri ve sanal sahnelerle markanızı bambaşka bir boyuta taşıyoruz.
+            </p>
+            <a href="hizmetler.html" class="category-btn">İncele</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REFERENCES AND PARTNERS -->
+    <section>
+      <h2 class="logo-section-title">Referanslarımız</h2>
+      <div class="logo-carousel">
+        <div class="carousel-track">
+          <!-- 25 placeholder logo cards -->
+          <!-- repeat 25 times -->
+          <div class="logo-card"><img src="/assets/images/placeholder-logo1.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo2.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo3.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo4.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo5.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo6.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo7.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo8.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo9.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo10.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo11.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo12.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo13.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo14.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo15.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo16.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo17.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo18.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo19.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo20.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo21.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo22.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo23.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo24.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo25.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo26.jpg" alt="Logo placeholder"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="logo-section-title">Çözüm Ortaklarımız</h2>
+      <div class="logo-carousel">
+        <div class="carousel-track">
+          <!-- 8 placeholder logo cards -->
+          <div class="logo-card"><img src="/assets/images/placeholder-logo27.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo28.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo29.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo30.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo31.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo32.jpg" alt="Logo placeholder"></div>
+          <div class="logo-card"><img src="/assets/images/placeholder-logo33.jpg" alt="Logo placeholder"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div data-include="/footer-tr.html"></div>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AlbaSpace – Shop</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+:root {
+      --header-bg:#020617;
+      --accent:#00c2ff;
+      --page-bg:#ffffff;
+      --text-main:#111827;
+      --text-muted:#4b5563;
+    }
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+      font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+      background:var(--page-bg);
+      color:var(--text-main);
+    }
+.header-logo{
+      display:flex;align-items:center;gap:8px;
+      text-decoration:none;color:#e5e7eb;
+    }
+.header-logo img{
+      width:40px;height:40px;border-radius:999px;
+      background:#0f172a;padding:4px;
+    }
+.header-logo span{
+      font-weight:600;font-size:16px;letter-spacing:.08em;text-transform:uppercase;
+    }
+.top-lang-switch{
+      display:flex;gap:6px;align-items:center;margin-left:10px;font-size:13px;
+    }
+.top-lang-switch a{
+      padding:4px 10px;border-radius:999px;border:1px solid #4b5563;
+      background:#020617;color:#e5e7eb;text-decoration:none;
+    }
+.top-lang-switch a.active{
+      background:#e5e7eb;color:#020617;font-weight:600;
+    }
+/* ---------- BODY ---------- */
+    .coming-wrapper{
+      max-width:900px;
+      margin:60px auto;
+      text-align:center;
+    }
+.coming-wrapper img{
+      width:100%;
+      max-width:430px;
+      border-radius:20px;
+      margin-bottom:30px;
+      box-shadow:0 8px 30px rgba(0,0,0,0.25);
+    }
+.coming-title{
+      font-size:48px;
+      font-weight:700;
+      text-transform:uppercase;
+      color:#111827;
+      letter-spacing:2px;
+    }
+.footer-logo img{
+      width:60px;height:60px;background:#0f172a;padding:4px;border-radius:999px;
+    }
+.header-social {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+.header-social img {
+      width: 22px;
+      height: 22px;
+      display: block;
+      border-radius: 6px;
+      transition: transform 0.15s, filter 0.2s;
+    }
+.header-social svg.social-icon-svg {
+      width: 22px;
+      height: 22px;
+      display: block;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      color: #e5e7eb;
+      transition: transform 0.15s, filter 0.2s;
+    }
+.header-social a:hover img,
+.header-social a:hover svg.social-icon-svg {
+      transform: translateY(-1px);
+      filter: brightness(1.2);
+    }
+</style>
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script src="/assets/js/include.js" defer></script>
+  <script src="/assets/js/menu-toggle.js" defer></script>
+</head>
+
+<body>
+  <div data-include="/header-en.html"></div>
+
+
+<!-- HEADER -->
+
+
+
+<!-- BODY -->
+<div class="coming-wrapper">
+  <img src="/assets/images/shop-coming-soon.jpg" alt="Coming Soon">
+  <div class="coming-title">Coming Soon</div>
+</div>
+
+
+<!-- FOOTER -->
+
+
+  <div data-include="/footer-en.html"></div>
+</body>
+</html>

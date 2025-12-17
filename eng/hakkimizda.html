@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AlbaSpace – About Us</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+:root {
+      --header-bg: #020617;
+      --accent: #00c2ff;
+      --page-bg: #ffffff;
+      --text-main: #111827;
+      --text-muted: #4b5563;
+    }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--page-bg);
+      color: var(--text-main);
+    }
+.header-logo {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      text-decoration:none;
+      color:#e5e7eb;
+    }
+.header-logo img {
+      width:40px; height:40px;
+      border-radius:999px;
+      background:#0f172a;
+      padding:4px;
+    }
+.header-logo span {
+      font-weight:600;
+      font-size:16px;
+      letter-spacing:0.08em;
+      text-transform:uppercase;
+    }
+.top-lang-switch {
+      display:flex;
+      gap:6px;
+      align-items:center;
+      font-size:13px;
+      margin-left:10px;
+    }
+.top-lang-switch a {
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid #4b5563;
+      background:#020617;
+      color:#e5e7eb;
+      text-decoration:none;
+    }
+.top-lang-switch a.active {
+      background:#e5e7eb;
+      color:#020617;
+      font-weight:600;
+    }
+/* COVER IMAGE */
+    .cover img {
+      width: 100%;
+      height: 350px;
+      object-fit: cover;
+      border-radius: 16px;
+      margin-bottom: 40px;
+    }
+/* TEXT SECTION */
+    .about-text {
+      font-size: 17px;
+      line-height: 1.6;
+      margin-bottom: 50px;
+      white-space: pre-line;
+    }
+/* TEAM */
+    .team-title {
+      font-size: 28px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+.team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(240px,1fr));
+      gap: 30px;
+      margin-top: 30px;
+    }
+.team-card {
+      text-align: center;
+      padding: 20px;
+      border-radius: 16px;
+      background: #f3f4f6;
+    }
+.team-card img {
+      width: 130px;
+      height: 130px;
+      object-fit: cover;
+      border-radius: 100px;
+      margin-bottom: 14px;
+    }
+.team-card h3 { font-size: 18px; margin-bottom: 4px; }
+.team-card p { font-size: 14px; color: var(--text-muted); }
+.footer-logo img {
+      width:60px;
+      height:60px;
+      background:#0f172a;
+      padding:4px;
+      border-radius:999px;
+    }
+.header-social {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+.header-social img {
+      width: 22px;
+      height: 22px;
+      display: block;
+      border-radius: 6px;
+      transition: transform 0.15s, filter 0.2s;
+    }
+.header-social svg.social-icon-svg {
+      width: 22px;
+      height: 22px;
+      display: block;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      color: #e5e7eb;
+      transition: transform 0.15s, filter 0.2s;
+    }
+.header-social a:hover img,
+.header-social a:hover svg.social-icon-svg {
+      transform: translateY(-1px);
+      filter: brightness(1.2);
+    }
+</style>
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script src="/assets/js/include.js" defer></script>
+  <script src="/assets/js/menu-toggle.js" defer></script>
+</head>
+
+<body>
+  <div data-include="/header-en.html"></div>
+
+
+<!-- HEADER -->
+
+
+<div class="page-wrapper">
+
+  <!-- COVER -->
+  <div class="cover">
+    <!-- ту же картинку можешь использовать, что и в TR-версии -->
+  <!--   <img src="/assets/images/hakkimizda-cover.jpg" alt="Hakkımızda kapak">  -->
+  </div>
+
+  <!-- ABOUT TEXT -->
+  <div class="about-text">
+Founded in 2022 in Türkiye,       ALBA SPACE is the first and only space-technology initiative in the country that sends brands to space and conducts scientific experiments in the stratosphere.
+
+With its professional and specialised team, Alba Space plays an important role in shaping the future in a positive way through social responsibility and awareness projects in the field of space technologies, prioritising the health of future generations and our planet based on a carbon-neutral principle.
+  </div>
+
+  <!-- TEAM -->
+  <h2 class="team-title">OUR TEAM</h2>
+
+  <div class="team-grid">
+
+    <div class="team-card">
+      <img src="/assets/images/team-idris.jpg" alt="Idris Albayrak">
+      <h3>İdris ALBAYRAK</h3>
+      <p>Founder & General Coordinator</p>
+    </div>
+
+
+    <div class="team-card">
+      <img src="/assets/images/team-ahmet-selcuk.jpg" alt="Ahmet Selçuk Değirmen">
+      <h3>Ahmet Selçuk DEĞİRMEN</h3>
+      <p>Social Media Specialist</p>
+    </div>
+
+    <div class="team-card">
+      <img src="/assets/images/team-nick.jpg" alt="Nick Nesterenko">
+      <h3>Nick NESTERENKO</h3>
+      <p> Computer Graphics Artist </p>
+    </div> 
+
+    <div class="team-card">
+      <img src="/assets/images/team-ayse.jpg" alt="Dr. Ayşe Nuran Çil">
+      <h3>Dr. Ayşe Nuran ÇİL</h3>
+      <p>Scientific Advisor</p>
+    </div>
+
+    <div class="team-card">
+      <img src="/assets/images/team-merve.jpg" alt="Merve Balaban">
+      <h3>Merve BALABAN</h3>
+      <p>Scientific Advisor</p>
+    </div>
+
+    <div class="team-card">
+      <img src="/assets/images/team-duringa.jpg" alt="Ahmet Duringa">
+      <h3>Ahmet DURİNGA</h3>
+      <p>AI Specialist</p>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+
+
+  <div data-include="/footer-en.html"></div>
+</body>
+</html>
+
+

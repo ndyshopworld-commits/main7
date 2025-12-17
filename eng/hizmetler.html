@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AlbaSpace – Services</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+:root {
+      --header-bg: #020617;
+      --accent: #00c2ff;
+      --page-bg: #ffffff;
+      --text-main: #111827;
+      --text-muted: #4b5563;
+    }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--page-bg); color: var(--text-main); }
+.header-logo img { width:40px; height:40px; border-radius:999px; background:#0f172a; padding:4px; }
+.header-logo span { font-weight:600; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:#e5e7eb; text-decoration:none; }
+.top-lang-switch { display:flex; gap:6px; align-items:center; margin-left:10px; }
+.top-lang-switch a { padding:4px 10px; border-radius:999px; border:1px solid #4b5563; background:#020617; color:#e5e7eb; text-decoration:none; }
+.top-lang-switch a.active { background:#e5e7eb; color:#020617; font-weight:600; }
+.services-title { text-align:center; font-size:32px; margin-bottom:24px; }
+.services-grid {
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px,1fr));
+      gap: 30px;
+    }
+.service-card {
+      background:#f9fafb;
+      border-radius:16px;
+      overflow:hidden;
+      box-shadow: 0 4px 16px rgba(15,23,42,0.1);
+      display:flex;
+      flex-direction: column;
+      height: 100%;
+    }
+.service-card img {
+      width:100%;
+      height:180px;
+      object-fit:cover;
+    }
+.service-card .card-content {
+      padding: 20px;
+      flex:1;
+    }
+.service-card h3 {
+      margin-bottom: 10px;
+      font-size:20px;
+    }
+.service-card p {
+      font-size:15px;
+      line-height:1.5;
+      color: var(--text-main);
+    }
+.service-card a {
+      margin-top: 16px;
+      display: inline-block;
+      padding: 8px 14px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 999px;
+      text-decoration: none;
+      font-size:14px;
+    }
+.footer-logo img { width:60px; height:60px; background:#0f172a; padding:4px; border-radius:999px; }
+.header-social {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+.header-social img {
+      width: 22px;
+      height: 22px;
+      display: block;
+      border-radius: 6px;
+      transition: transform 0.15s, filter 0.2s;
+    }
+.header-social svg.social-icon-svg {
+      width: 22px;
+      height: 22px;
+      display: block;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      color: #e5e7eb;
+      transition: transform 0.15s, filter 0.2s;
+    }
+.header-social a:hover img,
+.header-social a:hover svg.social-icon-svg {
+      transform: translateY(-1px);
+      filter: brightness(1.2);
+    }
+</style>
+
+  <link rel="stylesheet" href="/assets/css/site.css" />
+  <script src="/assets/js/include.js" defer></script>
+  <script src="/assets/js/menu-toggle.js" defer></script>
+</head>
+<body>
+  <div data-include="/header-en.html"></div>
+
+
+
+
+<div class="page-wrapper">
+
+  <h1 class="services-title">Our Services</h1>
+
+  <div class="services-grid">
+
+    <div class="service-card">
+      <img src="/assets/images/vr.jpg" alt="VR Games">
+      <div class="card-content">
+        <h3>VIRTUAL REALITY (VR) GAMES</h3>
+        <p>
+          We take innovation in education one step further. Using virtual reality technology,
+          we offer space, science and technology–themed simulations and games, making learning processes
+          more effective and fun.
+        </p>
+        <a href="#">Learn more</a>
+      </div>
+    </div>
+
+    <div class="service-card">
+      <img src="/assets/images/vr1.jpg" alt="VR Simulations">
+      <div class="card-content">
+        <h3>VIRTUAL REALITY (VR) SIMULATIONS</h3>
+        <p>
+          Alba Space takes you on an enchanting journey through the metaverse.
+          With our 3D simulations, we offer beyond-reality experiences that make a difference
+          in both education and entertainment. Experience the world of the future today.
+        </p>
+        <a href="#">Learn more</a>
+      </div>
+    </div>
+    <div class="service-card">
+      <img src="/assets/images/2025-12-08_21-01-19.png" alt="Stratosphere Flights">
+      <div class="card-content">
+        <h3>STRATOSPHERE FLIGHTS &amp; SPACE ADVERTISING</h3>
+        <p>
+          We offer stratosphere balloon flights that provide a near-space experience,
+          allowing you to capture stunning images and videos from the edge of space.
+          Additionally, we provide unique advertising opportunities by sending your brand
+          message to the stratosphere.
+        </p>
+        <a href="#">Learn more</a>
+      </div>
+
+<!-- 4: 3D / AR İçerik -->
+    <div class="service-card">
+      <img src="/assets/images/Gemini_Generated_Image_yk5xbwyk5xbwyk5x.png" alt="3D ve AR İçerik">
+      <div class="card-content">
+        <h3>3D &amp; Artırılmış Gerçeklik (AR) İçerikleri</h3>
+        <p>
+          Uydular, gezegenler ve uzay araçları için yüksek kaliteli 3D modeller
+          ve AR deneyimleri üreterek sergiler, müzeler ve eğitim projeleri için
+          yenilikçi çözümler sunuyoruz.
+        </p>
+        <a href="#">Detaylar</a>
+      </div>
+    </div>
+      
+
+      
+    
+    <!-- More service cards can be added later -->
+
+  </div>
+
+</div>
+
+
+
+  <div data-include="/footer-en.html"></div>
+</body>
+</html>
+
