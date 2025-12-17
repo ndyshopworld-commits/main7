@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // We need the preloader script to run even when the header is injected via
   // include.js (since scripts inside innerHTML are not executed by default).
   const ensurePreloaderScript = createPreloaderLoader();
+  const ensureModelPreloader = createModelPreloaderLoader();
 
   // ---------------- Mobile nav override ----------------
   if (! document.getElementById("albaspace-nav-override-style")) {
@@ -25,8 +26,8 @@ document.addEventListener("DOMContentLoaded", () => {
     navStyle.id = "albaspace-nav-override-style";
     navStyle.textContent = `
       @media (max-width: 768px) {
-        nav. main-nav {
-          display: none ! important;
+        nav.main-nav {
+          display: none !important;
           position: absolute;
           top: calc(100% + 10px);
           right: 12px;
@@ -34,20 +35,20 @@ document.addEventListener("DOMContentLoaded", () => {
           max-width: 420px;
           min-width: 220px;
           background: #020617;
-          border:  1px solid rgba(15, 23, 42, 0.8);
+          border: 1px solid rgba(15, 23, 42, 0.8);
           border-radius: 10px;
-          box-shadow: 0 18px 45px rgba(56,189,248,. 25);
+          box-shadow: 0 18px 45px rgba(56,189,248,0.25);
           flex-direction: column;
           padding: 8px 0;
           z-index: 1001;
           backdrop-filter: blur(6px);
           -webkit-backdrop-filter: blur(6px);
         }
-        nav.main-nav.nav-open { display: flex ! important; }
+        nav.main-nav.nav-open { display: flex !important; }
         nav.main-nav a {
           padding: 12px 18px;
           font-size: 14px;
-          border-bottom: 1px solid rgba(15,23,42,. 6);
+          border-bottom: 1px solid rgba(15,23,42,0.6);
           color: var(--text-main);
           display: block;
         }
@@ -74,14 +75,20 @@ document.addEventListener("DOMContentLoaded", () => {
           markActiveNav();
           setupLangSwitch();
           ensurePreloaderScript();
+          ensureModelPreloader();
         }
 
         if (url.includes("footer-")) {
           enhanceFooter(el);
+          ensureModelPreloader();
         }
       })
       .catch(console.error);
   });
+
+  // In case the page already contains <model-viewer> or was server-rendered
+  // call loader once more to be safe.
+  ensureModelPreloader();
 });
 
 // ================= MODEL VIEWER LOADER =================
@@ -212,25 +219,48 @@ function createPreloaderLoader() {
   };
 }
 
+function createModelPreloaderLoader(){
+  let loaded = false;
+
+  return function ensureModelPreloader(){
+    if (loaded) return;
+    const hasViewer = !!document.querySelector('model-viewer');
+    if (!hasViewer) return;
+
+    const existing = document.querySelector('script[data-model-preloader]');
+    if (existing){
+      loaded = true;
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = '/assets/js/model-preloader.js';
+    script.defer = true;
+    script.dataset.modelPreloader = 'true';
+    document.head.appendChild(script);
+    loaded = true;
+  };
+}
+
 // ================= NAV =================
 function markActiveNav() {
   const path = normalizePath(window.location.pathname || "/");
-  const navLinks = document.querySelectorAll(". main-nav a");
+  const navLinks = document.querySelectorAll(".main-nav a");
   let matched = false;
 
-  navLinks. forEach((a) => {
+  navLinks.forEach((a) => {
     const href = a.getAttribute("href");
-    if (! href) return;
+    if (!href) return;
 
     try {
-      const linkPath = normalizePath(new URL(href, window.location. origin).pathname);
+      const linkPath = normalizePath(new URL(href, window.location.origin).pathname);
       if (linkPath === path) {
         a.classList.add("active");
         matched = true;
       }
-    } catch {
-      if (path.endsWith(href)) {
-        a.classList. add("active");
+    } catch (e) {
+      if (href && path.endsWith(href)) {
+        a.classList.add("active");
         matched = true;
       }
     }
@@ -239,14 +269,14 @@ function markActiveNav() {
   if (!matched) {
     navLinks.forEach((a) => {
       const text = (a.textContent || "").trim().toUpperCase();
-      if (text. includes("ATLAS")) a.classList.add("active");
+      if (text.includes("ATLAS")) a.classList.add("active");
     });
   }
 }
 
 function normalizePath(p) {
-  if (! p || p === "/") return "/index.html";
-  if (! p.endsWith(". html") && !p.endsWith("/")) return p + "/";
+  if (!p || p === "/") return "/index.html";
+  if (!p.endsWith(".html") && !p.endsWith("/")) return p + "/";
   return p;
 }
 
@@ -344,7 +374,7 @@ function enhanceFooter(root) {
 
   const emailBtn = document.createElement('a');
   emailBtn.className = 'alba-footer-action';
-  emailBtn.href = 'mailto:hello@albaspace.com. tr';
+  emailBtn.href = 'mailto:hello@albaspace.com.tr';
   emailBtn.innerHTML = `
     <div class="action-row">
       <span class="action-icon">✉</span>
@@ -362,7 +392,7 @@ function enhanceFooter(root) {
   addressContainer.innerHTML = '';
   addressContainer.style.display = 'flex';
   addressContainer.style.flexDirection = 'column';
-  addressContainer. style.alignItems = 'center';
+  addressContainer.style.alignItems = 'center';
   addressContainer.style.justifyContent = 'center';
   addressContainer.style.width = '100%';
   addressContainer.style.margin = '0 auto';
@@ -385,7 +415,7 @@ function buildMapButton(blockText) {
   a.href =
     'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address);
   a.target = '_blank';
-  a. rel = 'noopener';
+  a.rel = 'noopener';
   const hintTr = 'Haritayı açmak için dokunun';
   a.innerHTML = `
     <div class="action-row">
@@ -433,7 +463,7 @@ function injectFooterStyles() {
   const s = document.createElement("style");
   s.id = "alba-footer-style-v5";
   s.textContent = `
-    . alba-footer-contact-panel {
+    .alba-footer-contact-panel {
       width: 100%;
       display: flex;
       flex-direction: column;
@@ -441,44 +471,44 @@ function injectFooterStyles() {
       gap: 16px;
       margin-top: 20px;
     }
-    . alba-footer-action {
+    .alba-footer-action {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       padding: 14px 20px;
       border-radius: 16px;
-      background:  rgba(15,23,42,. 55);
-      border: 1px solid rgba(148,163,184,.28);
-      box-shadow: 0 14px 38px rgba(0,0,0,. 35);
+      background: rgba(15,23,42,0.55);
+      border: 1px solid rgba(148,163,184,0.28);
+      box-shadow: 0 14px 38px rgba(0,0,0,0.35);
       -webkit-backdrop-filter: blur(10px);
       backdrop-filter: blur(10px);
       text-decoration: none;
       width: 220px;
-      transition: transform . 2s ease, box-shadow . 25s ease, border-color .25s ease;
+      transition: transform .2s ease, box-shadow .25s ease, border-color .25s ease;
     }
     .alba-footer-action:hover {
       transform: translateY(-2px);
-      border-color: rgba(56,189,248,.7);
-      box-shadow: 0 18px 52px rgba(56,189,248,.12), 0 14px 38px rgba(0,0,0,.45);
+      border-color: rgba(56,189,248,0.7);
+      box-shadow: 0 18px 52px rgba(56,189,248,0.12), 0 14px 38px rgba(0,0,0,0.45);
     }
-    .alba-footer-action . action-row {
+    .alba-footer-action .action-row {
       display: flex;
       align-items: center;
       gap: 8px;
       margin-bottom: 6px;
     }
-    . alba-footer-action .action-icon {
+    .alba-footer-action .action-icon {
       font-size: 18px;
       color: #38bdf8;
     }
-    .alba-footer-action . action-text {
+    .alba-footer-action .action-text {
       font-weight: 900;
       color: #a7f3d0;
       font-size: 14px;
-      letter-spacing: . 04em;
+      letter-spacing: .04em;
     }
-    . alba-footer-action .action-hint {
+    .alba-footer-action .action-hint {
       font-size: 11px;
       color: #cbd5f5;
       opacity: .75;
@@ -501,7 +531,7 @@ function injectFooterStyles() {
     }
     @media (max-width: 768px) {
       .alba-footer-contact-panel {
-        margin:  12px auto 0;
+        margin: 12px auto 0;
       }
     }
   `;
@@ -513,7 +543,7 @@ function injectFooterStyles() {
   document.addEventListener("DOMContentLoaded", () => {
     const slug = (() => {
       let path = window.location.pathname || "/";
-      path = path.replace(/\/index\. html$/, "/");
+      path = path.replace(/\/index\.html$/, "/");
       if (path.startsWith("/eng/")) path = path.substring(5);
       const segments = path.split("/").filter(Boolean);
       return segments.length > 0 ? segments[0] : null;
@@ -547,28 +577,28 @@ function injectFooterStyles() {
 
     const navDiv = document.createElement("div");
     navDiv.id = "atlas-page-nav";
-    navDiv. style.display = "flex";
+    navDiv.style.display = "flex";
     navDiv.style.justifyContent = "space-between";
     navDiv.style.alignItems = "center";
     navDiv.style.maxWidth = "640px";
     navDiv.style.margin = "40px auto";
-    navDiv. style.padding = "0 16px";
+    navDiv.style.padding = "0 16px";
 
     const prevA = document.createElement("a");
     prevA.href = prevLink;
     prevA.textContent = "←";
-    prevA.style. cssText = baseAtlasBtnCss();
+    prevA.style.cssText = baseAtlasBtnCss();
 
-    const nextA = document. createElement("a");
+    const nextA = document.createElement("a");
     nextA.href = nextLink;
     nextA.textContent = "→";
-    nextA.style. cssText = baseAtlasBtnCss();
+    nextA.style.cssText = baseAtlasBtnCss();
 
     navDiv.appendChild(prevA);
     navDiv.appendChild(nextA);
 
     const footerInclude = document.querySelector(
-      'div[data-include$="footer-en. html"], div[data-include$="footer-tr.html"]'
+      'div[data-include$="footer-en.html"], div[data-include$="footer-tr.html"]'
     );
     if (footerInclude?. parentNode) footerInclude.parentNode.insertBefore(navDiv, footerInclude);
     else document.body.appendChild(navDiv);
