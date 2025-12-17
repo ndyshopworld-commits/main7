@@ -65,21 +65,35 @@
     track('form_submit', payload);
   }, true);
 
-  // 3) Просмотр 3D модели (как “показалась на экране”)
-  //    Самый простой вариант: считаем просмотр, когда model-viewer загрузил модель.
-  document.addEventListener('DOMContentLoaded', function () {
-    var mv = document.querySelector('model-viewer[data-track="model_view"]');
-    if (!mv) return;
-
-    var fired = false;
+  // 3) Просмотр 3D модели (все model-viewer с data-track="model_view")
+  //    Привязываем обработчик загрузки ко всем текущим и динамически добавленным элементам.
+  function bindModelViewer(mv) {
+    if (!mv || mv.__trackingBound) return;
+    mv.__trackingBound = true;
     mv.addEventListener('load', function () {
-      if (fired) return;
-      fired = true;
-
       track('model_view', {
         page_path: location.pathname,
         model_name: mv.getAttribute('data-model-name') || ''
       });
     });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('model-viewer[data-track="model_view"]').forEach(bindModelViewer);
+
+    // Наблюдаем за динамическими вставками в DOM
+    if (window.MutationObserver) {
+      var mo = new MutationObserver(function (records) {
+        records.forEach(function (rec) {
+          rec.addedNodes && rec.addedNodes.forEach(function (node) {
+            if (!node || !node.querySelectorAll) return;
+            node.querySelectorAll && node.querySelectorAll('model-viewer[data-track="model_view"]').forEach(bindModelViewer);
+            // сам узел может быть model-viewer
+            if (node.matches && node.matches('model-viewer[data-track="model_view"]')) bindModelViewer(node);
+          });
+        });
+      });
+      mo.observe(document.documentElement || document.body, { childList: true, subtree: true });
+    }
   });
 })();
