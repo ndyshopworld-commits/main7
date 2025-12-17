@@ -275,6 +275,75 @@ footer.footer{
 }
 
 /* =========================
+   MODEL TITLE NAV BUTTONS (NEON)
+   ========================= */
+
+/* Wrapper inserted around model H1 to host neon nav buttons */
+.model-title-wrap{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:24px;
+  margin: 18px auto 8px;
+}
+
+/* The neon nav container (buttons positioned left/right of title) */
+.model-nav__btn{
+  --neon: #00c2ff;
+  --size: 48px;
+  width:var(--size);
+  height:var(--size);
+  display:inline-grid;
+  place-items:center;
+  border-radius:999px;
+  background:linear-gradient(180deg, rgba(0,194,255,0.12), rgba(0,194,255,0.06));
+  color:var(--neon);
+  font-size:20px;
+  border:1px solid rgba(0,194,255,0.18);
+  box-shadow:0 6px 20px rgba(0,194,255,0.12), 0 0 18px rgba(0,194,255,0.06) inset;
+  cursor:pointer;
+  transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;
+  position:relative;
+  z-index:5;
+  pointer-events:auto;
+}
+
+/* Neon glow using pseudo-element */
+.model-nav__btn::after{
+  content:'';
+  position:absolute;
+  inset: -8px;
+  border-radius:inherit;
+  background: radial-gradient(circle at 50% 30%, rgba(0,194,255,0.28), transparent 40%);
+  filter: blur(8px);
+  opacity:0.9;
+  transition:opacity .18s ease, transform .18s ease;
+  z-index:-1;
+}
+
+.model-nav__btn:hover{
+  transform:translateY(-4px) scale(1.03);
+  box-shadow:0 12px 36px rgba(0,194,255,0.26), 0 0 28px rgba(0,194,255,0.12) inset;
+}
+
+/* subtle pulsing animation */
+@keyframes neonPulse{ 0%{ transform:scale(1); opacity:0.95 } 50%{ transform:scale(1.04); opacity:1 } 100%{ transform:scale(1); opacity:0.95 } }
+.model-nav__btn.pulse{ animation:neonPulse 2.2s ease-in-out infinite; }
+
+/* position helpers when title is narrow/wide */
+.model-title-wrap .model-nav__btn.prev{ margin-right:8px; }
+.model-title-wrap .model-nav__btn.next{ margin-left:8px; }
+
+/* Accessibility: focus style */
+.model-nav__btn:focus{ outline:none; box-shadow:0 0 0 3px rgba(0,194,255,0.14), 0 10px 28px rgba(0,194,255,0.18); }
+
+@media (max-width:768px){
+  .model-nav__btn{ --size:40px; font-size:18px }
+  .model-title-wrap{ gap:12px; margin-top:12px }
+}
+
+/* =========================
    BURGER MENU
    ========================= */
 
