@@ -259,7 +259,12 @@
       align-items: center;
       justify-content: center;
       padding: 0;
-      min-width: 80px; /* ensure small items don't collapse on narrow screens */
+      min-width: 80px; /* on narrow screens */
+    }
+
+    /* Force larger tiles on desktop so carousel has overflow and autoplay is visible */
+    @media (min-width: 901px){
+      .logo-card{ min-width: 140px; }
     }
 
     .logo-card img{

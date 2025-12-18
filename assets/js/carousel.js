@@ -59,8 +59,11 @@
     let autoplay = true;
     let pausedUntil = 0;
 
-    const speedPxPerSec = () => (window.innerWidth <= 900 ? 90 : 48); // px/sec (faster on mobile)
+    // px/sec (faster on mobile). Increased speeds for better visibility on desktop and mobile
+    const speedPxPerSec = () => (window.innerWidth <= 900 ? 150 : 72);
 
+    // Ensure autoplay starts after layout settles (helps when container has not yet measured sizes)
+    setTimeout(() => { startAutoplay(); }, 120);
     function step(ts){
       if (!lastTime) lastTime = ts;
       const dt = ts - lastTime;
