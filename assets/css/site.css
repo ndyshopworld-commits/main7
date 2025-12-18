@@ -684,6 +684,25 @@ footer.footer{
     inset 0 0 26px rgba(255,255,255,0.08);
 }
 
+/* Carousel scrollbar: small, rounded, neon-blue */
+.logo-carousel{
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,194,255,0.9) transparent;
+}
+.logo-carousel::-webkit-scrollbar{ height:8px; }
+.logo-carousel::-webkit-scrollbar-track{ background: transparent; border-radius:999px; }
+.logo-carousel::-webkit-scrollbar-thumb{
+  background: linear-gradient(90deg,#00c2ff,#29d2ff);
+  border-radius:999px;
+  box-shadow:0 0 10px rgba(0,194,255,0.18);
+  border: 1px solid rgba(255,255,255,0.02);
+}
+.logo-carousel::-webkit-scrollbar-thumb:hover{ filter:brightness(1.05); }
+@media (max-width:900px){
+  .logo-carousel::-webkit-scrollbar{ height:6px }
+}
+
+
 /* Внутренние отступы: чтобы контент не “лип” к краям */
 .page-wrapper,
 .hero,
