@@ -409,13 +409,12 @@
     .carousel-track {
       display: flex;
       gap: 20px;
-      animation: slide-horizontal 13.3s ease-in-out infinite alternate;
+      /* animation removed in favor of JS autoplay to allow dragging */
       will-change: transform;
     }
 
     @media (max-width: 900px){
-      /* stop auto animation on small screens so users can swipe */
-      .carousel-track { animation: none !important; }
+      /* JS will disable animation on mobile automatically if needed */
     }
     .logo-card {
       flex: 0 0 auto;
@@ -444,6 +443,7 @@
   </style>
 
   <link rel="stylesheet" href="/assets/css/site.css" />
+  <script src="/assets/js/carousel.js" defer></script>
   <script src="/assets/js/include.js" defer></script>
   <script src="/assets/js/menu-toggle.js" defer></script>
 
