@@ -592,6 +592,33 @@ footer.footer{
   .menu-toggle{ display:none !important; }
 }
 
+/* Desktop-only wheel hint for carousel: small neon mouse icon with animation */
+@media (min-width:901px){
+  .logo-carousel-wrap{ position:relative; }
+  .carousel-wheel-hint{
+    position:absolute;
+    top:8px;
+    right:8px;
+    width:42px;
+    height:42px;
+    border-radius:999px;
+    background:rgba(2,6,23,0.56);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:1px solid rgba(0,194,255,0.12);
+    box-shadow:0 6px 20px rgba(0,194,255,0.06);
+    cursor:pointer;
+    transition:transform .18s ease, box-shadow .18s ease;
+    z-index:6;
+    animation:wheelHint 2.4s ease-in-out infinite;
+  }
+  .carousel-wheel-hint svg{ width:18px; height:18px; }
+  .carousel-wheel-hint:hover{ transform:scale(1.06); box-shadow:0 8px 28px rgba(0,194,255,0.12) }
+  .carousel-wheel-hint:focus{ outline:none; box-shadow:0 0 0 4px rgba(0,194,255,0.06) }
+  @keyframes wheelHint{ 0%{ transform:translateY(0) } 50%{ transform:translateY(-4px) } 100%{ transform:translateY(0) } }
+}
+
 /* ==================================================================
    Consolidated English page defaults (extracted from /eng/ inline styles)
    These rules are safe defaults used across English pages so we can

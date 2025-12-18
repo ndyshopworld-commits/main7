@@ -89,6 +89,21 @@
     // init
     startAutoplay();
 
+    // wheel hint button (desktop only) — if present, wire click and keyboard
+    const wrap = carousel.closest('.logo-carousel-wrap');
+    if (wrap){
+      const hint = wrap.querySelector('.carousel-wheel-hint');
+      if (hint){
+        hint.addEventListener('click', () => {
+          carousel.scrollBy({ left: Math.round(carousel.clientWidth * 0.5), behavior: 'smooth' });
+          pauseAutoplayTemporarily();
+        });
+        hint.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hint.click(); }
+        });
+      }
+    }
+
     // expose pause/resume for debugging
     carousel.__carousel = { pauseAutoplay, resumeAutoplay, stopAutoplay, startAutoplay };
   }
