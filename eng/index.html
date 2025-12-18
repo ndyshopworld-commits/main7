@@ -410,6 +410,12 @@
       display: flex;
       gap: 20px;
       animation: slide-horizontal 13.3s ease-in-out infinite alternate;
+      will-change: transform;
+    }
+
+    @media (max-width: 900px){
+      /* stop auto animation on small screens so users can swipe */
+      .carousel-track { animation: none !important; }
     }
     .logo-card {
       flex: 0 0 auto;

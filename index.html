@@ -225,11 +225,14 @@
 
     .logo-carousel{
       height: var(--logo-strip-h);
-      overflow: hidden;
+      overflow-x: auto; /* allow horizontal swipe on mobile */
+      overflow-y: hidden;
       margin-bottom: 40px;
       padding: 0 var(--logo-pad-x);
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
+      -ms-overflow-style: none;
+      touch-action: pan-x;
     }
     .logo-carousel::-webkit-scrollbar{ display:none; }
 
@@ -239,6 +242,7 @@
       align-items: center;
       gap: var(--logo-gap);
       animation: slide-horizontal 13.3s ease-in-out infinite alternate;
+      will-change: transform;
     }
 
     .logo-card{
@@ -254,6 +258,7 @@
       align-items: center;
       justify-content: center;
       padding: 0;
+      min-width: 80px; /* ensure small items don't collapse on narrow screens */
     }
 
     .logo-card img{
@@ -278,6 +283,9 @@
       .home-main { padding: 26px 16px 34px; }
       :root { --logo-strip-h: 110px; --logo-gap: 12px; }
       .logo-card img { max-width: 220px; }
+
+      /* Disable automatic carousel animation on small screens so touch swipe works reliably */
+      .carousel-track { animation: none !important; }
     }
 
     /* do not remove: you used this earlier; keep page clean */
