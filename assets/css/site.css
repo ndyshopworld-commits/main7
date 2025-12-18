@@ -272,13 +272,13 @@ footer.footer{
   box-shadow:0 6px 18px rgba(0,0,0,0.45), 0 0 12px rgba(0,194,255,0.06);
 }
 
-/* Ensure larger/square footer social variants are reduced consistently */
+/* Ensure larger footer social variants have a reasonable size (fix tiny icons on some pages) */
 .footer-social.footer-social--xl img,
 .footer-social.vertical.footer-social--xl img,
 .footer-social--xl img{
-  width:calc(16.5px * 0.75);
-  height:calc(16.5px * 0.75);
-  border-radius:calc(4.5px * 0.75);
+  width:49.5px; /* consistent large size for --xl variants */
+  height:49.5px;
+  border-radius:10.5px;
 }
 
 .footer-social a:hover img{
