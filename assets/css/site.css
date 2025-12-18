@@ -331,7 +331,7 @@ footer.footer{
   .footer-logo p{ font-size:14px }
 
   .footer-social{ justify-content:center; gap:16px }
-  .footer-social img{ width:28px; height:28px; border-radius:8px }
+  .footer-social img{ width:84px; height:84px; border-radius:24px }
 
   .footer-actions{
     grid-template-columns:1fr;
@@ -342,6 +342,22 @@ footer.footer{
   .footer-action__value{ font-size:15px }
 
   footer.footer{ padding:22px 12px }
+}
+
+/* Desktop: move footer action buttons into a single horizontal row on larger screens */
+@media (min-width:769px){
+  .footer-grid{
+    align-items:center;
+  }
+  .footer-actions{
+    display:flex;
+    flex-direction:row;
+    gap:16px;
+    align-items:center;
+    justify-self:end;
+    grid-template-columns:none;
+  }
+  .footer-action{ padding:10px 14px; }
 }
 
 /* =========================
