@@ -150,3 +150,35 @@
 .model-title-wrap .model-nav__btn.next {
   margin: 0;
 }
+
+/* =========================
+   MOBILE LAYOUT FIX
+   ========================= */
+@media (max-width: 768px) {
+
+  /* Вся строка с заголовком и кнопками */
+  .model-title-wrap {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  /* Заголовок — немного левее, но визуально центрирован */
+  .model-title-wrap h1 {
+    text-align: left;
+    padding-left: 12px;
+    font-size: 26px;
+  }
+
+  /* Левая кнопка — ближе к краю */
+  .model-nav__btn_prev {
+    margin-left: -6px;
+  }
+
+  /* Правая кнопка — тоже симметрично */
+  .model-nav__btn_next {
+    margin-right: -6px;
+  }
+}
+
+
+
