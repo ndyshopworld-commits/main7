@@ -29,8 +29,8 @@
 }
 
 /* Base button styling with brighter neon color and larger size */
- .model-nav__btn {
-  /* Primary neon colour: deep sky blue */
+.model-nav__btn {
+   /* Primary neon colour: deep sky blue */
   --neon: #00bfff;
   --size: 56px;
   width: var(--size);
@@ -151,51 +151,55 @@
   margin: 0;
 }
 
+
 /* =========================
-   MOBILE LAYOUT FIX
+   PIXEL-PERFECT MOBILE LAYOUT
    ========================= */
 @media (max-width: 768px) {
 
-  /* Вся строка с заголовком и кнопками */
-  .model-title-wrap {
-    padding-left: 16px;
-    padding-right: 16px;
+  /* Ряд заголовка: кнопки у краёв, заголовок строго по центру */
+  .model-title-wrap{
+    width: 100%;
+    max-width: 100%;
+    padding-left: 14px;
+    padding-right: 14px;
+    margin: 26px auto 14px;
   }
 
-  /* Заголовок — немного левее, но визуально центрирован */
-  .model-title-wrap h1 {
-    text-align: left;
-    padding-left: 12px;
+  /* Заголовок строго по центру + чуть меньше */
+  .model-title-wrap h1{
+    text-align: center;
     font-size: 26px;
+    line-height: 1.15;
+    padding: 0;
   }
 
-  /* Левая кнопка — ближе к краю */
-  .model-nav__btn_prev {
-    margin-left: -6px;
+  /* Кнопки: не вылазят за края */
+  .model-nav__btn_prev{
+    margin-left: 0;
+  }
+  .model-nav__btn_next{
+    margin-right: 0;
   }
 
-  /* Правая кнопка — тоже симметрично */
-  .model-nav__btn_next {
-    margin-right: -6px;
-  }
-}
-
-
-/* =========================
-   MOBILE RIGHT BUTTON FIX
-   ========================= */
-@media (max-width: 768px) {
-
-  /* Чуть сдвигаем всю строку внутрь */
-  .model-title-wrap {
-    padding-right: 20px;
-  }
-
-  /* Правая кнопка — гарантированно не вылезает за край */
-  .model-nav__btn_next {
-    margin-right: 8px;
+  /* Немного уменьшаем кнопки, чтобы не конфликтовали с текстом */
+  .model-nav__btn{
+    --size: 50px;
+    font-size: 22px;
   }
 }
 
-
-
+/* Ультра-узкие экраны (iPhone SE/320px) */
+@media (max-width: 360px) {
+  .model-title-wrap{
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .model-nav__btn{
+    --size: 46px;
+    font-size: 20px;
+  }
+  .model-title-wrap h1{
+    font-size: 24px;
+  }
+}
