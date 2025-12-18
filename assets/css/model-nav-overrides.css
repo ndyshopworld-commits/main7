@@ -162,7 +162,7 @@
     width: 100%;
     max-width: 100%;
     padding-left: 14px;
-    padding-right: 14px;
+    padding-right: 72px; /* ⬅️ увеличиваем запас справа под иконки */
     margin: 26px auto 14px;
   }
 
@@ -179,7 +179,7 @@
     margin-left: 0;
   }
   .model-nav__btn_next{
-    margin-right: 0;
+    margin-right: 0; /* кнопка помещается в безопасную зону */
   }
 
   /* Немного уменьшаем кнопки, чтобы не конфликтовали с текстом */
@@ -193,7 +193,7 @@
 @media (max-width: 360px) {
   .model-title-wrap{
     padding-left: 10px;
-    padding-right: 10px;
+    padding-right: 64px; /* ⬅️ чуть меньше для самых узких экранов */
   }
   .model-nav__btn{
     --size: 46px;
