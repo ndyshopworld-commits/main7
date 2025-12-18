@@ -1,30 +1,49 @@
 /* Overrides for neon model navigation buttons */
 
 /* Wrapper around the model title */
+/*
+ * Title wrapper adjustments
+ *
+ * The title and navigation buttons sit on a single horizontal line.  The
+ * wrapper spans the full available width of the page (within the page
+ * container) and uses space-between justification so the buttons hug
+ * the left and right edges while the title remains centred.  A top
+ * margin lifts the row away from the header bar.
+ */
 .model-title-wrap {
-  /* Keep existing flex alignment but adjust margins for upper placement */
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 28px;
-  margin: 24px auto 12px;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1280px;
+  padding: 0 32px;
+  margin: 40px auto 20px;
+}
+
+/* Force the wrapped <h1> to grow and centre its text so it sits
+   perfectly between the left and right buttons. */
+.model-title-wrap h1 {
+  flex: 1 1 auto;
+  text-align: center;
+  margin: 0;
 }
 
 /* Base button styling with brighter neon color and larger size */
-.model-nav__btn {
-  --neon: #00ffff;
+ .model-nav__btn {
+  /* Primary neon colour: deep sky blue */
+  --neon: #00bfff;
   --size: 56px;
   width: var(--size);
   height: var(--size);
   display: inline-grid;
   place-items: center;
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(0,255,255,0.18), rgba(0,255,255,0.08));
+  background: linear-gradient(180deg, rgba(0,191,255,0.18), rgba(0,191,255,0.08));
   color: var(--neon);
   font-size: 24px;
   font-weight: bold;
-  border: 1px solid rgba(0,255,255,0.25);
-  box-shadow: 0 8px 24px rgba(0,255,255,0.30), 0 0 32px rgba(0,255,255,0.15) inset;
+  border: 1px solid rgba(0,191,255,0.25);
+  box-shadow: 0 8px 24px rgba(0,191,255,0.30), 0 0 32px rgba(0,191,255,0.15) inset;
   text-shadow: 0 0 8px var(--neon), 0 0 16px var(--neon);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
@@ -41,7 +60,7 @@
   position: absolute;
   inset: -10px;
   border-radius: inherit;
-  background: radial-gradient(circle at 50% 30%, rgba(0,255,255,0.35), transparent 50%);
+  background: radial-gradient(circle at 50% 30%, rgba(0,191,255,0.35), transparent 50%);
   filter: blur(10px);
   opacity: 1;
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -51,7 +70,7 @@
 /* Hover interaction: lift and intensify glow */
 .model-nav__btn:hover {
   transform: translateY(-6px) scale(1.05);
-  box-shadow: 0 16px 40px rgba(0,255,255,0.40), 0 0 36px rgba(0,255,255,0.20) inset;
+  box-shadow: 0 16px 40px rgba(0,191,255,0.40), 0 0 36px rgba(0,191,255,0.20) inset;
 }
 
 /* Energy wave animation on hover */
@@ -60,7 +79,7 @@
   position: absolute;
   inset: -100%;
   border-radius: inherit;
-  background: radial-gradient(circle at center, rgba(0,255,255,0.5), rgba(0,255,255,0) 70%);
+  background: radial-gradient(circle at center, rgba(0,191,255,0.55), rgba(0,191,255,0) 70%);
   animation: energyWave 0.9s forwards ease-out;
   pointer-events: none;
   z-index: 0;
@@ -73,6 +92,37 @@
   }
   to {
     transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+/*
+ * Reactor pulse on click
+ *
+ * When the user presses down on a button, a more intense pulse radiates
+ * outward from the centre, simulating a reactor shockwave.  The effect
+ * uses the same pseudo-element as the hover wave but with its own
+ * animation and colour values.  It automatically fades out when
+ * finished.
+ */
+.model-nav__btn:active::before {
+  content: '';
+  position: absolute;
+  inset: -100%;
+  border-radius: inherit;
+  background: radial-gradient(circle at center, rgba(0,191,255,0.8), rgba(0,191,255,0) 70%);
+  animation: reactorPulse 0.6s forwards ease-out;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes reactorPulse {
+  from {
+    transform: scale(0.4);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(3);
     opacity: 0;
   }
 }
@@ -94,10 +144,9 @@
 }
 
 /* Adjust button spacing when attached to the title */
-.model-title-wrap .model-nav__btn.prev {
-  margin-right: 10px;
-}
-
+/* Reset margins on nav buttons when inside the title wrapper.  The
+   flex layout handles spacing, so individual margins are unnecessary. */
+.model-title-wrap .model-nav__btn.prev,
 .model-title-wrap .model-nav__btn.next {
-  margin-left: 10px;
+  margin: 0;
 }
