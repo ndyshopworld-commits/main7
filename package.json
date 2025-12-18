@@ -1,0 +1,8 @@
+{
+  "name": "albaspace-site",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build:atlas-nav": "node scripts/build-atlas-nav.mjs"
+  }
+}

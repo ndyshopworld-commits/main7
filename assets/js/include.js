@@ -39,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // include.js (since scripts inside innerHTML are not executed by default).
   const ensurePreloaderScript = createPreloaderLoader();
   const ensureModelPreloader = createModelPreloaderLoader();
+  const ensureModelNavLoader = createModelNavLoader();
 
   // ---------------- Mobile nav override ----------------
   if (! document.getElementById("albaspace-nav-override-style")) {
@@ -110,6 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
           setupLangSwitch();
           ensurePreloaderScript();
           ensureModelPreloader();
+          ensureModelNavLoader();
         }
 
         if (url.includes("footer-")) {
@@ -275,6 +277,25 @@ function createModelPreloaderLoader(){
     loaded = true;
   };
 }
+
+function createModelNavLoader(){
+  let loaded = false;
+
+  return function ensureModelNavLoader(){
+    if (loaded) return;
+
+    const existing = document.querySelector('script[data-model-nav-loader]');
+    if (existing){ loaded = true; return; }
+
+    const script = document.createElement('script');
+    script.src = '/assets/js/model-nav-loader.js';
+    script.defer = true;
+    script.dataset.modelNavLoader = 'true';
+    document.head.appendChild(script);
+    loaded = true;
+  };
+}
+
 
 // ================= NAV =================
 function markActiveNav() {
