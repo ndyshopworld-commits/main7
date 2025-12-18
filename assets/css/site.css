@@ -354,7 +354,8 @@ footer.footer{
     flex-direction:row;
     gap:16px;
     align-items:center;
-    justify-self:end;
+    justify-content:flex-end; /* right-align actions inside their grid cell */
+    width:100%;
     grid-template-columns:none;
   }
   .footer-action{ padding:10px 14px; }

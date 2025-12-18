@@ -6,8 +6,28 @@
 // buttons and a call shortcut. 
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Ensure a valid favicon is present (fix pages using /favicon.png that return 404)
+  (function ensureFavicon(){
+    try {
+      const existing = document.querySelector('link[rel~="icon"]');
+      if (existing) {
+        if (existing.getAttribute('href') === '/favicon.png') {
+          existing.setAttribute('href','/assets/images/albalogo.png');
+        }
+        return;
+      }
+      const l = document.createElement('link');
+      l.rel = 'icon';
+      l.type = 'image/png';
+      l.href = '/assets/images/albalogo.png';
+      document.head.appendChild(l);
+    } catch (e) {
+      /* silently ignore DOM issues */
+    }
+  })();
+
   const includes = document.querySelectorAll("[data-include]");
-  if (! includes.length) return;
+  if (!includes.length) return;
 
   // УЛУЧШЕНИЕ 1: Загружаем CSS стили для model-viewer ДО всего остального
   injectModelViewerStyles();
@@ -338,26 +358,26 @@ function enhanceFooter(root) {
   if (!footer || footer.classList.contains("alba-footer-v5")) return;
   footer.classList.add("alba-footer-v5");
 
-  const allowCallSquare = /\/hizmetler(\. html)?\/?$/i. test(
+  const allowCallSquare = /\/hizmetler(\.html)?\/?$/i.test(
     window.location.pathname || ""
   );
-  if (! allowCallSquare) {
-    footer.querySelectorAll(". alba-call-square").forEach((el) => el.remove());
+  if (!allowCallSquare) {
+    footer.querySelectorAll(".alba-call-square").forEach((el) => el.remove());
   }
 
   const socials =
-    footer.querySelector(". social-icons") ||
+    footer.querySelector(".social-icons") ||
     footer.querySelector(".footer-socials") ||
     footer.querySelector("[data-socials]");
   if (socials) socials.classList.add("alba-footer-socials");
 
   const addressContainer =
     footer.querySelector(".footer-right") ||
-    footer.querySelector(". footer-address") ||
-    footer.querySelector(". footer-contact") ||
+    footer.querySelector(".footer-address") ||
+    footer.querySelector(".footer-contact") ||
     footer.querySelector("[data-footer-address]");
 
-  if (! addressContainer) return;
+  if (!addressContainer) return;
 
   const rawAddrText = (addressContainer.innerText || "").trim();
   if (! rawAddrText) return;
