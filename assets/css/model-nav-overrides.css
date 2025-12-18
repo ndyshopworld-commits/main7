@@ -181,4 +181,21 @@
 }
 
 
+/* =========================
+   MOBILE RIGHT BUTTON FIX
+   ========================= */
+@media (max-width: 768px) {
+
+  /* Чуть сдвигаем всю строку внутрь */
+  .model-title-wrap {
+    padding-right: 20px;
+  }
+
+  /* Правая кнопка — гарантированно не вылезает за край */
+  .model-nav__btn_next {
+    margin-right: 8px;
+  }
+}
+
+
 
