@@ -130,9 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
   (function injectAiWidget(){
     document.addEventListener('DOMContentLoaded', function(){
       const path = window.location.pathname || '/';
-      const isIndex = path === '/' || /\/index\.html$/.test(path) || /^\/eng\/?$/.test(path);
-      if (!isIndex) return;
-
+      // Run on ALL pages (user requested global widget)
       const isEn = path.startsWith('/eng/');
       const name = isEn ? 'Albaman' : 'Albamen';
 
