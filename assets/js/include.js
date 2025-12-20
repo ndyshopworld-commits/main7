@@ -125,6 +125,132 @@ document.addEventListener("DOMContentLoaded", () => {
   // In case the page already contains <model-viewer> or was server-rendered
   // call loader once more to be safe.
   ensureModelPreloader();
+
+  // ===== GLOBAL AI WIDGET (Albamen / Albaman) =====
+  (function injectAiWidget(){
+    document.addEventListener('DOMContentLoaded', function(){
+      const path = window.location.pathname || '/';
+      const isIndex = path === '/' || /\/index\.html$/.test(path) || /^\/eng\/?$/.test(path);
+      if (!isIndex) return;
+
+      const isEn = path.startsWith('/eng/');
+      const name = isEn ? 'Albaman' : 'Albamen';
+
+      if (document.getElementById('ai-launcher-btn-global')) return;
+
+      // Launcher button
+      const btn = document.createElement('button');
+      btn.id = 'ai-launcher-btn-global';
+      btn.className = 'ai-launcher-btn';
+      btn.type = 'button';
+      btn.setAttribute('aria-haspopup','dialog');
+      btn.setAttribute('aria-label', isEn ? 'Open Albaman chat' : 'Albamen sohbetini aç');
+      btn.innerHTML = `<span class="ai-dot" aria-hidden="true"></span>${name}`;
+      document.body.appendChild(btn);
+
+      // Panel
+      const panel = document.createElement('div');
+      panel.className = 'ai-panel-global';
+      panel.id = 'ai-panel-global';
+      panel.setAttribute('role','dialog');
+      panel.setAttribute('aria-hidden','true');
+      panel.innerHTML = `
+        <div class="ai-panel-header">
+          <div class="title">${name}</div>
+          <button class="ai-close" aria-label="Close">×</button>
+        </div>
+        <div class="ai-panel-body">
+          <div class="ai-messages" id="ai-messages-global">
+            <div class="ai-msg bot">${isEn ? 'Hi — I am Albaman. Ask me about space!' : 'Merhaba — ben Albamen. Bana uzay hakkında sorular sor!'}</div>
+          </div>
+          <div class="ai-input-row">
+            <input class="ai-input" id="ai-input-global" placeholder="${isEn ? 'Type a message...' : 'Mesaj yazın...'}" />
+            <button class="ai-mic-btn" id="ai-mic-btn" aria-label="${isEn ? 'Click to speak with Albaman' : 'Albamen ile konuşmak için basın'}">🎤</button>
+            <button class="ai-btn" id="ai-send-btn">${isEn ? 'Send' : 'Gönder'}</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(panel);
+
+      const openPanel = () => { panel.setAttribute('aria-hidden','false'); panel.style.display='flex'; setTimeout(()=>messages.scrollTop = messages.scrollHeight, 50); };
+      const closePanel = () => { panel.setAttribute('aria-hidden','true'); panel.style.display='none'; };
+
+      const closeBtn = panel.querySelector('.ai-close');
+      const messages = panel.querySelector('#ai-messages-global');
+      const input = panel.querySelector('#ai-input-global');
+      const micBtn = panel.querySelector('#ai-mic-btn');
+      const sendBtn = panel.querySelector('#ai-send-btn');
+
+      btn.addEventListener('click', () => openPanel());
+      closeBtn.addEventListener('click', () => closePanel());
+
+      function appendMessage(text, who){
+        const d = document.createElement('div');
+        d.className = 'ai-msg ' + (who === 'user' ? 'user' : 'bot');
+        d.textContent = text;
+        messages.appendChild(d);
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      function simulateBotReply(userText){
+        // Placeholder bot reply — simple echo with small delay. Replace with real backend later.
+        setTimeout(()=>{
+          appendMessage(isEn ? `Albaman: I heard "${userText}"` : `Albamen: Duydum "${userText}"`,'bot');
+        }, 700);
+      }
+
+      sendBtn.addEventListener('click', ()=>{
+        const v = input.value.trim();
+        if(!v) return;
+        appendMessage(v,'user');
+        input.value='';
+        simulateBotReply(v);
+      });
+
+      input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ sendBtn.click(); } });
+
+      // Microphone handling via Web Speech API (graceful fallback)
+      let recognition = null;
+      let listening = false;
+
+      function initRecognition(){
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if(!SpeechRecognition) return null;
+        const r = new SpeechRecognition();
+        r.lang = isEn ? 'en-US' : 'tr-TR';
+        r.interimResults = false;
+        r.maxAlternatives = 1;
+        r.onresult = (ev) => {
+          const text = (ev.results && ev.results[0] && ev.results[0][0].transcript) || '';
+          appendMessage(text,'user');
+          simulateBotReply(text);
+        };
+        r.onend = () => { listening = false; micBtn.textContent = '🎤'; micBtn.classList.remove('listening'); };
+        r.onerror = (e) => { listening = false; micBtn.textContent = '🎤'; micBtn.classList.remove('listening'); };
+        return r;
+      }
+
+      micBtn.addEventListener('click', ()=>{
+        if(!recognition) recognition = initRecognition();
+        if(!recognition){
+          // Not supported — toggle simple speak prompt to type
+          appendMessage(isEn ? 'Voice not supported on this device.' : 'Ses desteği bu cihazda bulunmuyor.','bot');
+          return;
+        }
+        if(listening){ recognition.stop(); listening = false; micBtn.textContent='🎤'; micBtn.classList.remove('listening'); }
+        else { recognition.start(); listening = true; micBtn.textContent='◼️'; micBtn.classList.add('listening'); }
+      });
+
+      // Close panel if user clicks outside
+      document.addEventListener('click', (e)=>{
+        if (!panel.contains(e.target) && e.target !== btn) closePanel();
+      });
+
+      // Start closed
+      closePanel();
+    });
+  })();
+
 });
 
 // ================= MODEL VIEWER LOADER =================
