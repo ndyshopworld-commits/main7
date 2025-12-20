@@ -1006,6 +1006,9 @@
     <!-- Footer include placeholder -->
     <div data-include-html="/footer-en.html"></div>
 
+    <!-- Include global include.js (for marking active nav, lang switch, etc.) -->
+    <script src="/assets/js/include.js" defer></script>
+
     <!-- Include script to load header and footer fragments and restructure addresses -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
@@ -1018,6 +1021,14 @@
             .then((res) => (res.ok ? res.text() : ""))
             .then((html) => {
               el.innerHTML = html;
+
+              // If header was inserted, attempt to mark active nav and setup language switch
+              if (url.includes("header")) {
+                try {
+                  if (window.markActiveNav) window.markActiveNav();
+                  if (window.setupLangSwitch) window.setupLangSwitch();
+                } catch (e) { /* ignore */ }
+              }
 
               // After inserting footer, restructure address blocks for better layout
               if (url.includes("footer")) {
