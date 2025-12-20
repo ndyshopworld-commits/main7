@@ -1,183 +1,362 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>AlbaSpace – About Us</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="AlbaSpace - A space initiative making space, science, and technology accessible to everyone.">
 
+  <!-- Site Styles -->
+  <link rel="stylesheet" href="/assets/css/site.css" />
+
+  <!-- Inline Styles (Same as TR version for consistency) -->
   <style>
     :root {
       --header-bg: #020617;
       --accent: #00c2ff;
-      --page-bg: #ffffff;
-      --text-main: #111827;
-      --text-muted: #4b5563;
+      --page-bg: #020617;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--page-bg);
+      background: #020617 url("/assets/images/space-bg.jpg") center/cover fixed no-repeat;
       color: var(--text-main);
-      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
-    /* Контейнер для центрирования контента */
-    .page-wrapper {
+    /* Fallback for background if image missing */
+    body {
+        background-color: #020617;
+    }
+
+    .about-shell {
       max-width: 1100px;
-      margin: 0 auto;
-      padding: 40px 20px;
+      margin: 50px auto 80px;
+      padding: 0 20px;
+      flex: 1; /* Pushes footer down */
     }
 
-    /* COVER IMAGE */
-    .cover img {
-      width: 100%;
-      height: 350px;
-      object-fit: cover;
-      border-radius: 16px;
-      margin-bottom: 40px;
-      display: block;
+    .about-card {
+      background: rgba(15, 23, 42, 0.92);
+      border-radius: 26px;
+      box-shadow: 0 28px 90px rgba(0, 0, 0, 0.85);
+      padding: 28px 24px 36px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      backdrop-filter: blur(12px);
     }
 
-    /* TEXT SECTION */
-    .about-text {
-      font-size: 18px;
-      line-height: 1.8;
-      margin-bottom: 60px;
-      text-align: center;
-      max-width: 800px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    /* TEAM */
-    .team-title {
+    .page-title {
       font-size: 32px;
-      margin-bottom: 40px;
       text-align: center;
-      font-weight: 700;
+      margin-bottom: 6px;
+      color: #f9fafb;
+    }
+
+    .page-sub {
+      font-size: 14px;
+      text-align: center;
+      color: var(--text-muted);
+      margin-bottom: 26px;
+    }
+
+    .about-text {
+      font-size: 16px;
+      line-height: 1.7;
+      color: #e5e7eb;
+      margin-bottom: 32px;
+      white-space: pre-line;
+    }
+
+    .about-text strong { color: #ffffff; }
+
+    .team-title {
+      font-size: 24px;
+      text-align: center;
+      margin-bottom: 18px;
+      color: #f9fafb;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
     }
 
     .team-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 30px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 22px;
+      margin-top: 10px;
     }
 
     .team-card {
       text-align: center;
-      padding: 30px 20px;
-      border-radius: 20px;
-      background: #f8fafc;
+      padding: 18px 14px 20px;
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.94);
+      border: 1px solid rgba(55, 65, 81, 0.8);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
       transition: transform 0.2s ease;
-      border: 1px solid #e2e8f0;
     }
-
+    
     .team-card:hover {
-      transform: translateY(-5px);
+        transform: translateY(-5px);
     }
 
     .team-card img {
-      width: 140px;
-      height: 140px;
+      width: 120px;
+      height: 120px;
       object-fit: cover;
       border-radius: 50%;
-      margin-bottom: 16px;
-      border: 3px solid var(--accent);
-      padding: 3px;
+      margin-bottom: 10px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.8);
+      border: 2px solid rgba(148, 163, 184, 0.7);
+      background-color: #1e293b; /* Placeholder color */
     }
 
-    .team-card h3 { 
-      font-size: 19px; 
-      margin-bottom: 6px; 
-      color: var(--text-main);
+    .team-card h3 {
+      font-size: 17px;
+      margin-bottom: 4px;
+      color: #f9fafb;
     }
 
-    .team-card p { 
-      font-size: 15px; 
+    .team-card p {
+      font-size: 13px;
       color: var(--text-muted);
-      font-weight: 500;
+    }
+
+    @media (max-width: 768px){
+      .about-shell { margin: 40px auto 60px; padding: 0 14px; }
+      .about-card { padding: 22px 16px 26px; }
+      .page-title { font-size: 26px; }
+      .team-grid { gap: 16px; }
+    }
+
+    /* ---------- AI Agent Launcher ---------- */
+    .ai-launcher-btn {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 9998;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(2, 6, 23, 0.72);
+      color: #e5e7eb;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65);
+      cursor: pointer;
+      user-select: none;
+      transition: transform .15s ease, filter .15s ease;
+      font-size: 13px;
+      letter-spacing: .03em;
+    }
+    .ai-launcher-btn:hover { transform: translateY(-2px); filter: brightness(1.06); }
+    
+    .ai-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: linear-gradient(135deg, #00c2ff, #22c55e);
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.65);
+    }
+    
+    .ai-panel {
+      position: fixed;
+      right: 18px;
+      bottom: 74px;
+      width: min(420px, calc(100vw - 36px));
+      height: 520px;
+      z-index: 9999;
+      display: none;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(2, 6, 23, 0.92);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.8);
+    }
+    .ai-panel.open { display: block; }
+    
+    .ai-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.18), rgba(34, 197, 94, 0.10), rgba(56, 189, 248, 0.18));
+      border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+      color: #e5e7eb;
+      font-size: 13px;
+    }
+    .ai-panel-header strong { font-weight: 650; letter-spacing: .02em; }
+    
+    .ai-close {
+      border: none;
+      background: rgba(2, 6, 23, 0.55);
+      color: #e5e7eb;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 50%;
+      width: 32px; height: 32px;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .ai-panel-body {
+      height: calc(100% - 52px);
+      padding: 14px;
+      color: #e5e7eb;
+      font-size: 13px;
+    }
+    .ai-placeholder {
+      height: 100%;
+      border-radius: 14px;
+      border: 1px dashed rgba(148, 163, 184, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 18px;
+      background: rgba(15, 23, 42, 0.55);
+      line-height: 1.5;
+      color: #cbd5f5;
     }
   </style>
-
-  <link rel="stylesheet" href="/assets/css/site.css" />
-  <script src="/assets/js/include.js" defer></script>
-  <script src="/assets/js/menu-toggle.js" defer></script>
 </head>
 
 <body>
-  <div data-include="/header-en.html"></div>
+  <!-- Header Placeholder (English) -->
+  <div data-include="/header-en.html" id="header-placeholder">
+     <!-- Fallback content -->
+     <header style="padding: 20px; text-align: center; border-bottom: 1px solid #333;">
+        <span style="color: #00c2ff; font-weight: bold;">ALBA SPACE</span> Navigation
+     </header>
+  </div>
 
-  <main class="page-wrapper">
+  <div class="about-shell">
+    <div class="about-card">
+      <h1 class="page-title">ALBA SPACE</h1>
+      <p class="page-sub">
+        A space initiative making space, science, and technology accessible to everyone.
+      </p>
 
-    <div class="cover">
-      </div>
-
-    <section class="about-text">
-      <p>
+      <div class="about-text">
         Founded in 2022 in Turkey, <strong>ALBA SPACE</strong> is the first and only space-technology initiative in the country that sends brands to space and conducts scientific experiments in the stratosphere.
-      </p>
-      <br>
-      <p>
+
         With its professional and specialised team, Alba Space plays an important role in shaping the future in a positive way through social responsibility and awareness projects in the field of space technologies, prioritising the health of future generations and our planet based on a carbon-neutral principle.
-      </p>
-    </section>
-
-    <h2 class="team-title">Our Team</h2>
-
-    <div class="team-grid">
-      <div class="team-card">
-        <img src="/assets/images/team-idris.jpg" alt="İdris Albayrak">
-        <h3>İdris ALBAYRAK</h3>
-        <p>Founder & General Coordinator</p>
       </div>
 
-      <div class="team-card">
-        <img src="/assets/images/team-nick.jpg" alt="Nick Nesterenko">
-        <h3>Nick NESTERENKO</h3>
-        <p>Computer Graphics Artist</p>
-      </div>
+      <h2 class="team-title">OUR TEAM</h2>
 
-      <div class="team-card">
-        <img src="/assets/images/team-duringa.jpg" alt="Ahmet Duringa">
-        <h3>Ahmet DURİNGA</h3>
-        <p>AI Specialist</p>
-      </div>
-
-      <div class="team-card">
-        <img src="/assets/images/a1.png" alt="Sıla ARTUN">
-        <h3>Sıla ARTUN</h3>
-        <p>Sales Representative</p>
-      </div>
-
-      <div class="team-card">
-        <img src="/assets/images/a2.png" alt="Sümeyye AKSOY">
-        <h3>Sümeyye AKSOY</h3>
-        <p>Sales Representative</p>
-      </div>
-
-      <div class="team-card">
-        <img src="/assets/images/a3.png" alt="Ahmet ÇAKAR">
-        <h3>Ahmet ÇAKAR</h3>
-        <p>AI Specialist</p>
-      </div>
-
-      <div class="team-card">
-        <img src="/assets/images/team-ahmet-selcuk.jpg" alt="Ahmet Selçuk Değirmen">
-        <h3>Ahmet Selçuk DEĞİRMEN</h3>
-        <p>Social Media Specialist</p>
-      </div>
-
-      <div class="team-card">
-        <img src="/assets/images/team-doga.jpg" alt="Doğa TOPÇU">
-        <h3>Doğa TOPÇU</h3>
-        <p>Sales Representative</p>
+      <div class="team-grid">
+        <div class="team-card">
+          <!-- Added onerror handlers for preview stability -->
+          <img src="/assets/images/team-idris.jpg" alt="İdris Albayrak" onerror="this.src='https://ui-avatars.com/api/?name=Idris+A&background=0D8ABC&color=fff'">
+          <h3>İdris ALBAYRAK</h3>
+          <p>Founder & General Coordinator</p>
+        </div>
+        <div class="team-card">
+          <img src="/assets/images/team-nick.jpg" alt="Nick Nesterenko" onerror="this.src='https://ui-avatars.com/api/?name=Nick+N&background=0D8ABC&color=fff'">
+          <h3>Nick NESTERENKO</h3>
+          <p>Computer Graphics Artist</p>
+        </div>
+        <div class="team-card">
+          <img src="/assets/images/team-duringa.jpg" alt="Ahmet Duringa" onerror="this.src='https://ui-avatars.com/api/?name=Ahmet+D&background=0D8ABC&color=fff'">
+          <h3>Ahmet DURİNGA</h3>
+          <p>AI Specialist</p>
+        </div>
+        <div class="team-card">
+          <img src="/assets/images/a1.png" alt="Sıla ARTUN" onerror="this.src='https://ui-avatars.com/api/?name=Sila+A&background=0D8ABC&color=fff'">
+          <h3>Sıla ARTUN</h3>
+          <p>Sales Representative</p>
+        </div>
+        <div class="team-card">
+          <img src="/assets/images/a2.png" alt="Sümeyye AKSOY" onerror="this.src='https://ui-avatars.com/api/?name=Sumeyye+A&background=0D8ABC&color=fff'">
+          <h3>Sümeyye AKSOY</h3>
+          <p>Sales Representative</p>
+        </div>
+        <div class="team-card">
+          <img src="/assets/images/a3.png" alt="Ahmet ÇAKAR" onerror="this.src='https://ui-avatars.com/api/?name=Ahmet+C&background=0D8ABC&color=fff'">
+          <h3>Ahmet ÇAKAR</h3>
+          <p>AI Specialist</p>
+        </div>
+        <div class="team-card">
+          <img src="/assets/images/team-ahmet-selcuk.jpg" alt="Ahmet Selçuk DEĞİRMEN" onerror="this.src='https://ui-avatars.com/api/?name=Ahmet+S&background=0D8ABC&color=fff'">
+          <h3>Ahmet Selçuk DEĞİRMEN</h3>
+          <p>Social Media Specialist</p>
+        </div>
+        <div class="team-card">
+          <img src="/assets/images/team-doga.jpg" alt="Doğa TOPÇU" onerror="this.src='https://ui-avatars.com/api/?name=Doga+T&background=0D8ABC&color=fff'">
+          <h3>Doğa TOPÇU</h3>
+          <p>Sales Representative</p>
+        </div>
       </div>
     </div>
+  </div>
 
-  </main>
+  <!-- AI Agent -->
+  <button class="ai-launcher-btn" id="aiLauncherBtn" type="button" aria-haspopup="dialog" aria-controls="aiPanel">
+    <span class="ai-dot" aria-hidden="true"></span>
+    AI Agent
+  </button>
+
+  <div class="ai-panel" id="aiPanel" role="dialog" aria-modal="true" aria-label="AI Agent">
+    <div class="ai-panel-header">
+      <strong>AI Agent</strong>
+      <button class="ai-close" id="aiCloseBtn" type="button" aria-label="Close">&times;</button>
+    </div>
+    <div class="ai-panel-body">
+      <div class="ai-placeholder">
+        AI widget will be here.<br>
+      </div>
+    </div>
+  </div>
 
   <div data-include="/footer-en.html"></div>
+
+  <!-- Scripts -->
+  <script src="/assets/js/include.js" defer></script>
+  <script src="/assets/js/menu-toggle.js" defer></script>
+
+  <script>
+    // AI Agent Toggle Logic
+    (function(){
+      const btn = document.getElementById('aiLauncherBtn');
+      const panel = document.getElementById('aiPanel');
+      const close = document.getElementById('aiCloseBtn');
+      
+      if(!btn || !panel || !close) return;
+
+      function openPanel(){ 
+        panel.classList.add('open'); 
+        if(window.innerWidth < 768) document.body.style.overflow='hidden'; 
+      }
+      
+      function closePanel(){ 
+        panel.classList.remove('open'); 
+        document.body.style.overflow=''; 
+      }
+
+      btn.addEventListener('click', () => panel.classList.contains('open') ? closePanel() : openPanel());
+      close.addEventListener('click', closePanel);
+      
+      document.addEventListener('keydown', (e) => {
+        if(e.key === 'Escape' && panel.classList.contains('open')) closePanel();
+      });
+    })();
+
+    // --- MOCK SCRIPT FOR PREVIEW ONLY ---
+    document.addEventListener("DOMContentLoaded", function() {
+        if (typeof includeHTML === 'undefined') {
+             console.log("External include.js not found, running fallback.");
+        }
+    });
+  </script>
 </body>
 </html>

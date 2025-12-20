@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>AlbaSpace – Geleceğinizi Uzaya Taşıyın!</title>
+  <title>AlbaSpace – Take Your Future to Space!</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- IMPORTANT: keep global site styles -->
@@ -20,9 +20,9 @@
       --text-muted: #9ca3af;
 
       /* logo strip controls */
-      --logo-strip-h: 120px;   /* высота полосы: 110–140 можно */
-      --logo-gap: 14px;        /* одинаковый зазор */
-      --logo-pad-x: 12px;      /* поля слева/справа */
+      --logo-strip-h: 120px;   /* height of the strip: 110–140 is okay */
+      --logo-gap: 14px;        /* equal gap */
+      --logo-pad-x: 12px;      /* left/right padding */
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -32,6 +32,9 @@
       background: #020617 url("/assets/images/space-bg.jpg") center/cover fixed no-repeat;
       color: var(--text-main);
     }
+
+    /* Fallback for background */
+    body { background-color: #020617; }
 
     /* ===== Glass box ===== */
     .glass-box {
@@ -216,7 +219,7 @@
       background: #29d2ff;
     }
 
-    /* ===== Logo carousels (FIXED: big logos, minimal equal gaps) ===== */
+    /* ===== Logo carousels ===== */
     .logo-section-title {
       text-align: center;
       font-size: 24px;
@@ -235,14 +238,12 @@
       -ms-overflow-style: none;
       touch-action: pan-x;
     }
-    /* custom scrollbar handled by global CSS (small, rounded, neon blue) */
-
+    
     .carousel-track{
       height: 100%;
       display: flex;
       align-items: center;
       gap: var(--logo-gap);
-      /* animation removed in favor of JS autoplay to allow dragging */
       will-change: transform;
     }
 
@@ -271,7 +272,7 @@
       height: 100%;
       width: auto;
       max-height: 100%;
-      max-width: 260px;   /* защита от “слишком широких” логотипов */
+      max-width: 260px;   /* protect against too wide logos */
       object-fit: contain;
       opacity: 0.95;
       display: block;
@@ -294,7 +295,6 @@
       .carousel-track { animation: none !important; }
     }
 
-    /* do not remove: you used this earlier; keep page clean */
     .home-page .hero,
     .home-page .card-container {
       background: none;
@@ -307,66 +307,65 @@
 </head>
 
 <body class="home-page">
-  <div data-include="/header-tr.html"></div>
+  <div data-include="/header-en.html"></div>
 
   <main class="home-main">
 
     <!-- HERO -->
     <section class="hero">
       <div class="glass-box">
-        <h1>Geleceğinizi Uzaya Taşıyın!</h1>
+        <h1>Take Your Future to Space!</h1>
         <p class="lead">
-          Markanızı uzaya gönderiyoruz! Uzay temalı reklam ve eğitim çözümlerimizle,
-          markanıza benzersiz ve unutulmaz bir deneyim sunuyoruz.
+          We send your brand to space! We offer your brand a unique and unforgettable experience with our space-themed advertising and educational solutions.
         </p>
 
         <div class="hero-buttons">
-          <a href="hizmetler.html" class="btn-primary">Hizmetleri Keşfedin</a>
-          <a href="galeri.html" class="btn-outline">Galeriyi Görün</a>
+          <a href="services.html" class="btn-primary">Discover Services</a>
+          <a href="gallery.html" class="btn-outline">View Gallery</a>
         </div>
 
         <div class="hero-stats">
           <div>
             <strong>150+</strong>
-            Yenilikçi Çözümler
+            Innovative Solutions
           </div>
           <div>
             <strong>15</strong>
-            Uzay İlgili Başarı
+            Space Achievements
           </div>
         </div>
       </div>
 
       <div class="hero-image">
-        <img src="/assets/images/anasayfa-hero.jpg" alt="Uzay ufku ve uydu görüntüsü">
+        <img src="/assets/images/anasayfa-hero.jpg" alt="Space horizon and satellite view">
       </div>
     </section>
 
     <!-- CATEGORIES -->
     <section>
       <div class="glass-box glass-box--fit">
-        <h2 class="section-title">Ürün Kategorileri</h2>
+        <h2 class="section-title">Product Categories</h2>
         <p class="section-subtitle">
-          Uzayda markanızı tanıtmak için yenilikçi çözümler sunuyoruz.
+          We offer innovative solutions to promote your brand in space.
         </p>
       </div>
 
       <div class="card-container">
         <div class="category-card">
-          <img src="/assets/images/urun-uzay-tanitimi.jpg" alt="Uzay tanıtımı">
+          <img src="/assets/images/urun-uzay-tanitimi.jpg" alt="Space Promotion">
           <div class="category-body">
-            <h3>Uzay Tanıtımı</h3>
-            <p>Markanızı uzaya taşıyarak dikkat çekici ve fark yaratan kampanyalar oluşturuyoruz.</p>
-            <a href="hizmetler.html" class="category-btn">Keşfet</a>
+            <h3>Space Promotion</h3>
+            <p>We create striking and distinctive campaigns by taking your brand to space.</p>
+            <a href="services.html" class="category-btn">Discover</a>
           </div>
         </div>
 
         <div class="category-card">
-          <img src="/assets/images/urun-uzay-reklamlari.jpg" alt="Uzay reklamları">
+          <img src="/assets/images/urun-uzay-reklamlari.jpg" alt="Space Advertisements">
           <div class="category-body">
-            <h3>Uzay Reklamları</h3>
-            <p>Gerçek uzay görüntüleri ve sanal sahnelerle markanızı bambaşka bir boyuta taşıyoruz.</p>
-            <a href="hizmetler.html" class="category-btn">İncele</a>
+            <h3>Space Advertisements</h3>
+            <p>We take your brand to another dimension with real space footage and virtual scenes.</p>
+            <a href="services.html" class="category-btn">Explore</a>
           </div>
         </div>
       </div>
@@ -375,12 +374,13 @@
     <!-- REFERENCES -->
     <section>
       <div class="glass-box glass-box--fit">
-        <h2 class="logo-section-title">Referanslarımız</h2>
+        <h2 class="logo-section-title">Our References</h2>
       </div>
 
       <div class="logo-carousel-wrap">
         <div class="logo-carousel">
           <div class="carousel-track">
+            <!-- Logos -->
             <div class="logo-card"><img src="/assets/images/placeholder-logo1.jpg" alt="Logo placeholder"></div>
             <div class="logo-card"><img src="/assets/images/placeholder-logo2.jpg" alt="Logo placeholder"></div>
             <div class="logo-card"><img src="/assets/images/placeholder-logo3.jpg" alt="Logo placeholder"></div>
@@ -422,7 +422,7 @@
     <!-- PARTNERS -->
     <section>
       <div class="glass-box glass-box--fit">
-        <h2 class="logo-section-title">Çözüm Ortaklarımız</h2>
+        <h2 class="logo-section-title">Solution Partners</h2>
       </div>
 
       <div class="logo-carousel-wrap">
@@ -449,6 +449,6 @@
 
   </main>
 
-  <div data-include="/footer-tr.html"></div>
+  <div data-include="/footer-en.html"></div>
 </body>
 </html>

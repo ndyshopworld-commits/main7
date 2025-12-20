@@ -56,6 +56,18 @@ body{
   text-transform:uppercase;
 }
 
+.header-logo img.albaspace-img{
+  height:22px;
+  width:auto;
+  object-fit:contain;
+}
+
+.footer-logo img.albaspace-img{
+  height:48px;
+  width:auto;
+  object-fit:contain;
+}
+
 /* меню чуть правее и по центру между логотипом и соцсетями */
 .main-nav{
   display:flex;
