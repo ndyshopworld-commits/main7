@@ -134,99 +134,7 @@
       .team-grid { gap: 16px; }
     }
 
-    /* ---------- AI Agent Launcher ---------- */
-    .ai-launcher-btn {
-      position: fixed;
-      right: 18px;
-      bottom: 18px;
-      z-index: 9998;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      background: rgba(2, 6, 23, 0.72);
-      color: #e5e7eb;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65);
-      cursor: pointer;
-      user-select: none;
-      transition: transform .15s ease, filter .15s ease;
-      font-size: 13px;
-      letter-spacing: .03em;
-    }
-    .ai-launcher-btn:hover { transform: translateY(-2px); filter: brightness(1.06); }
-    
-    .ai-dot {
-      width: 10px; height: 10px; border-radius: 50%;
-      background: linear-gradient(135deg, #00c2ff, #22c55e);
-      box-shadow: 0 0 18px rgba(56, 189, 248, 0.65);
-    }
-    
-    .ai-panel {
-      position: fixed;
-      right: 18px;
-      bottom: 74px;
-      width: min(420px, calc(100vw - 36px));
-      height: 520px;
-      z-index: 9999;
-      display: none;
-      border-radius: 18px;
-      overflow: hidden;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      background: rgba(2, 6, 23, 0.92);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.8);
-    }
-    .ai-panel.open { display: block; }
-    
-    .ai-panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 12px;
-      background: linear-gradient(90deg, rgba(56, 189, 248, 0.18), rgba(34, 197, 94, 0.10), rgba(56, 189, 248, 0.18));
-      border-bottom: 1px solid rgba(148, 163, 184, 0.22);
-      color: #e5e7eb;
-      font-size: 13px;
-    }
-    .ai-panel-header strong { font-weight: 650; letter-spacing: .02em; }
-    
-    .ai-close {
-      border: none;
-      background: rgba(2, 6, 23, 0.55);
-      color: #e5e7eb;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      border-radius: 50%;
-      width: 32px; height: 32px;
-      cursor: pointer;
-      font-size: 18px;
-      line-height: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .ai-panel-body {
-      height: calc(100% - 52px);
-      padding: 14px;
-      color: #e5e7eb;
-      font-size: 13px;
-    }
-    .ai-placeholder {
-      height: 100%;
-      border-radius: 14px;
-      border: 1px dashed rgba(148, 163, 184, 0.35);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 18px;
-      background: rgba(15, 23, 42, 0.55);
-      line-height: 1.5;
-      color: #cbd5f5;
-    }
+
   </style>
 </head>
 
@@ -300,24 +208,6 @@
     </div>
   </div>
 
-  <!-- AI Agent -->
-  <button class="ai-launcher-btn" id="aiLauncherBtn" type="button" aria-haspopup="dialog" aria-controls="aiPanel">
-    <span class="ai-dot" aria-hidden="true"></span>
-    AI Agent
-  </button>
-
-  <div class="ai-panel" id="aiPanel" role="dialog" aria-modal="true" aria-label="AI Agent">
-    <div class="ai-panel-header">
-      <strong>AI Agent</strong>
-      <button class="ai-close" id="aiCloseBtn" type="button" aria-label="Close">&times;</button>
-    </div>
-    <div class="ai-panel-body">
-      <div class="ai-placeholder">
-        AI widget will be here.<br>
-      </div>
-    </div>
-  </div>
-
   <div data-include="/footer-en.html"></div>
 
   <!-- Scripts -->
@@ -325,31 +215,6 @@
   <script src="/assets/js/menu-toggle.js" defer></script>
 
   <script>
-    // AI Agent Toggle Logic
-    (function(){
-      const btn = document.getElementById('aiLauncherBtn');
-      const panel = document.getElementById('aiPanel');
-      const close = document.getElementById('aiCloseBtn');
-      
-      if(!btn || !panel || !close) return;
-
-      function openPanel(){ 
-        panel.classList.add('open'); 
-        if(window.innerWidth < 768) document.body.style.overflow='hidden'; 
-      }
-      
-      function closePanel(){ 
-        panel.classList.remove('open'); 
-        document.body.style.overflow=''; 
-      }
-
-      btn.addEventListener('click', () => panel.classList.contains('open') ? closePanel() : openPanel());
-      close.addEventListener('click', closePanel);
-      
-      document.addEventListener('keydown', (e) => {
-        if(e.key === 'Escape' && panel.classList.contains('open')) closePanel();
-      });
-    })();
 
     // --- MOCK SCRIPT FOR PREVIEW ONLY ---
     document.addEventListener("DOMContentLoaded", function() {
