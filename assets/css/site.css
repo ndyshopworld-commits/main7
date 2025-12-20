@@ -56,6 +56,20 @@ body{
   text-transform:uppercase;
 }
 
+/* ===== HEADER LOGO FIX ===== */
+/* This ensures the AlbaSpace text-image in the header is NOT round/framed */
+.header-logo .albaspace-img {
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  /* Adjust height/width if necessary to match footer style */
+  height: auto;
+  max-height: 40px; /* Example constraint to keep it neat */
+  object-fit: contain;
+}
+
 .header-logo img.albaspace-img{
   height:22px;
   width:auto;
