@@ -6,136 +6,100 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
-:root {
+    :root {
       --header-bg: #020617;
       --accent: #00c2ff;
       --page-bg: #ffffff;
       --text-main: #111827;
       --text-muted: #4b5563;
     }
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: var(--page-bg);
       color: var(--text-main);
+      line-height: 1.5;
     }
-.header-logo {
-      display:flex;
-      align-items:center;
-      gap:8px;
-      text-decoration:none;
-      color:#e5e7eb;
+
+    /* Контейнер для центрирования контента */
+    .page-wrapper {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 20px;
     }
-.header-logo img {
-      width:40px; height:40px;
-      border-radius:999px;
-      background:#0f172a;
-      padding:4px;
-    }
-.header-logo span {
-      font-weight:600;
-      font-size:16px;
-      letter-spacing:0.08em;
-      text-transform:uppercase;
-    }
-.top-lang-switch {
-      display:flex;
-      gap:6px;
-      align-items:center;
-      font-size:13px;
-      margin-left:10px;
-    }
-.top-lang-switch a {
-      padding:4px 10px;
-      border-radius:999px;
-      border:1px solid #4b5563;
-      background:#020617;
-      color:#e5e7eb;
-      text-decoration:none;
-    }
-.top-lang-switch a.active {
-      background:#e5e7eb;
-      color:#020617;
-      font-weight:600;
-    }
-/* COVER IMAGE */
+
+    /* COVER IMAGE */
     .cover img {
       width: 100%;
       height: 350px;
       object-fit: cover;
       border-radius: 16px;
       margin-bottom: 40px;
+      display: block;
     }
-/* TEXT SECTION */
+
+    /* TEXT SECTION */
     .about-text {
-      font-size: 17px;
-      line-height: 1.6;
-      margin-bottom: 50px;
-      white-space: pre-line;
+      font-size: 18px;
+      line-height: 1.8;
+      margin-bottom: 60px;
+      text-align: center;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
     }
-/* TEAM */
+
+    /* TEAM */
     .team-title {
-      font-size: 28px;
-      margin-bottom: 20px;
+      font-size: 32px;
+      margin-bottom: 40px;
       text-align: center;
+      font-weight: 700;
     }
-.team-grid {
+
+    .team-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit,minmax(240px,1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 30px;
-      margin-top: 30px;
     }
-.team-card {
+
+    .team-card {
       text-align: center;
-      padding: 20px;
-      border-radius: 16px;
-      background: #f3f4f6;
+      padding: 30px 20px;
+      border-radius: 20px;
+      background: #f8fafc;
+      transition: transform 0.2s ease;
+      border: 1px solid #e2e8f0;
     }
-.team-card img {
-      width: 130px;
-      height: 130px;
+
+    .team-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .team-card img {
+      width: 140px;
+      height: 140px;
       object-fit: cover;
-      border-radius: 100px;
-      margin-bottom: 14px;
+      border-radius: 50%;
+      margin-bottom: 16px;
+      border: 3px solid var(--accent);
+      padding: 3px;
     }
-.team-card h3 { font-size: 18px; margin-bottom: 4px; }
-.team-card p { font-size: 14px; color: var(--text-muted); }
-.footer-logo img {
-      width:60px;
-      height:60px;
-      background:#0f172a;
-      padding:4px;
-      border-radius:999px;
+
+    .team-card h3 { 
+      font-size: 19px; 
+      margin-bottom: 6px; 
+      color: var(--text-main);
     }
-.header-social {
-      display: flex;
-      gap: 14px;
-      align-items: center;
+
+    .team-card p { 
+      font-size: 15px; 
+      color: var(--text-muted);
+      font-weight: 500;
     }
-.header-social img {
-      width: 22px;
-      height: 22px;
-      display: block;
-      border-radius: 6px;
-      transition: transform 0.15s, filter 0.2s;
-    }
-.header-social svg.social-icon-svg {
-      width: 22px;
-      height: 22px;
-      display: block;
-      stroke: currentColor;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      fill: none;
-      color: #e5e7eb;
-      transition: transform 0.15s, filter 0.2s;
-    }
-.header-social a:hover img,
-.header-social a:hover svg.social-icon-svg {
-      transform: translateY(-1px);
-      filter: brightness(1.2);
-    }
-</style>
+  </style>
 
   <link rel="stylesheet" href="/assets/css/site.css" />
   <script src="/assets/js/include.js" defer></script>
@@ -145,72 +109,75 @@ body {
 <body>
   <div data-include="/header-en.html"></div>
 
+  <main class="page-wrapper">
 
-<!-- HEADER -->
+    <div class="cover">
+      </div>
 
+    <section class="about-text">
+      <p>
+        Founded in 2022 in Turkey, <strong>ALBA SPACE</strong> is the first and only space-technology initiative in the country that sends brands to space and conducts scientific experiments in the stratosphere.
+      </p>
+      <br>
+      <p>
+        With its professional and specialised team, Alba Space plays an important role in shaping the future in a positive way through social responsibility and awareness projects in the field of space technologies, prioritising the health of future generations and our planet based on a carbon-neutral principle.
+      </p>
+    </section>
 
-<div class="page-wrapper">
+    <h2 class="team-title">Our Team</h2>
 
-  <!-- COVER -->
-  <div class="cover">
-    <!-- ту же картинку можешь использовать, что и в TR-версии -->
-  <!--   <img src="/assets/images/hakkimizda-cover.jpg" alt="Hakkımızda kapak">  -->
-  </div>
+    <div class="team-grid">
+      <div class="team-card">
+        <img src="/assets/images/team-idris.jpg" alt="İdris Albayrak">
+        <h3>İdris ALBAYRAK</h3>
+        <p>Founder & General Coordinator</p>
+      </div>
 
-  <!-- ABOUT TEXT -->
-  <div class="about-text">
-Founded in 2022 in Turkey,       ALBA SPACE is the first and only space-technology initiative in the country that sends brands to space and conducts scientific experiments in the stratosphere.
+      <div class="team-card">
+        <img src="/assets/images/team-nick.jpg" alt="Nick Nesterenko">
+        <h3>Nick NESTERENKO</h3>
+        <p>Computer Graphics Artist</p>
+      </div>
 
-With its professional and specialised team, Alba Space plays an important role in shaping the future in a positive way through social responsibility and awareness projects in the field of space technologies, prioritising the health of future generations and our planet based on a carbon-neutral principle.
-  </div>
+      <div class="team-card">
+        <img src="/assets/images/team-duringa.jpg" alt="Ahmet Duringa">
+        <h3>Ahmet DURİNGA</h3>
+        <p>AI Specialist</p>
+      </div>
 
-  <!-- TEAM -->
-  <h2 class="team-title">OUR TEAM</h2>
+      <div class="team-card">
+        <img src="/assets/images/a1.png" alt="Sıla ARTUN">
+        <h3>Sıla ARTUN</h3>
+        <p>Sales Representative</p>
+      </div>
 
-  <div class="team-grid">
+      <div class="team-card">
+        <img src="/assets/images/a2.png" alt="Sümeyye AKSOY">
+        <h3>Sümeyye AKSOY</h3>
+        <p>Sales Representative</p>
+      </div>
 
-    <div class="team-card">
-      <img src="/assets/images/team-idris.jpg" alt="Idris Albayrak">
-      <h3>İdris ALBAYRAK</h3>
-      <p>Founder & General Coordinator</p>
+      <div class="team-card">
+        <img src="/assets/images/a3.png" alt="Ahmet ÇAKAR">
+        <h3>Ahmet ÇAKAR</h3>
+        <p>AI Specialist</p>
+      </div>
+
+      <div class="team-card">
+        <img src="/assets/images/team-ahmet-selcuk.jpg" alt="Ahmet Selçuk Değirmen">
+        <h3>Ahmet Selçuk DEĞİRMEN</h3>
+        <p>Social Media Specialist</p>
+      </div>
+
+      <div class="team-card">
+        <img src="/assets/images/team-doga.jpg" alt="Doğa TOPÇU">
+        <h3>Doğa TOPÇU</h3>
+        <p>Sales Representative</p>
+      </div>
     </div>
 
-
-    <div class="team-card">
-      <img src="/assets/images/team-ahmet-selcuk.jpg" alt="Ahmet Selçuk Değirmen">
-      <h3>Ahmet Selçuk DEĞİRMEN</h3>
-      <p>Social Media Specialist</p>
-    </div>
-
-    <div class="team-card">
-      <img src="/assets/images/team-nick.jpg" alt="Nick Nesterenko">
-      <h3>Nick NESTERENKO</h3>
-      <p> Computer Graphics Artist </p>
-    </div> 
-
-    <div class="team-card">
-      <img src="/assets/images/team-ayse.jpg" alt="Dr. Ayşe Nuran Çil">
-      <h3>Dr. Ayşe Nuran ÇİL</h3>
-      <p>Scientific Advisor</p>
-    </div>
-
-
-
-    <div class="team-card">
-      <img src="/assets/images/team-doga.jpg" alt="Doğa TOPÇU">
-      <h3>Doğa TOPÇU</h3>
-      <p>Sales Representative</p>
-    </div>
-
-  </div>
-
-</div>
-
-<!-- FOOTER -->
-
+  </main>
 
   <div data-include="/footer-en.html"></div>
 </body>
 </html>
-
-
