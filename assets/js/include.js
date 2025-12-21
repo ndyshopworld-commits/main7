@@ -220,8 +220,15 @@ function injectAiWidget(){
   `;
   document.body.appendChild(panel);
 
-  const openPanel = () => { panel.setAttribute('aria-hidden','false'); panel.style.display='flex'; setTimeout(()=>messages.scrollTop = messages.scrollHeight, 50); };
-  const closePanel = () => { panel.setAttribute('aria-hidden','true'); panel.style.display='none'; };
+  const openPanel = () => {
+    panel.setAttribute('aria-hidden','false');
+    panel.classList.add('ai-open');
+    setTimeout(()=>messages.scrollTop = messages.scrollHeight, 50);
+  };
+  const closePanel = () => {
+    panel.setAttribute('aria-hidden','true');
+    panel.classList.remove('ai-open');
+  };
 
   const closeBtn = panel.querySelector('.ai-close');
   const messages = panel.querySelector('#ai-messages-global');
