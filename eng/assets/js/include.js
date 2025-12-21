@@ -7,9 +7,8 @@
 // duplicated event handlers and ensures consistent behavior across
 // English pages.
 
-document.addEventListener("DOMContentLoaded", () => {
-  const includes = document.querySelectorAll("[data-include]");
-  if (!includes.length) return;
+runAfterDomReady(() => {
+  const includes = document.querySelectorAll("[data-include], [data-include-html]");
 
   // Ensure model-viewer registers even if the primary CDN fails to load
   // (otherwise the custom element stays unknown and the model stays hidden).
@@ -85,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.head.appendChild(navStyle);
   }
   const loadFragment = (el) => {
-    const url = el.getAttribute("data-include");
+    const url = el.getAttribute("data-include") || el.getAttribute("data-include-html");
     if (!url) return;
     fetch(url)
       .then((res) => {
@@ -104,8 +103,20 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error(err);
       });
   };
-  includes.forEach(loadFragment);
+  if (includes.length) {
+    includes.forEach(loadFragment);
+  }
+
+  injectAiWidget();
 });
+
+function runAfterDomReady(fn){
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fn, { once: true });
+  } else {
+    fn();
+  }
+}
 
 function markActiveNav() {
   const path = window.location.pathname || "/";
@@ -186,3 +197,164 @@ function toTrPath(path) {
   return tr;
 }
 
+function injectAiWidget(){
+  const path = window.location.pathname || '/';
+  const isEn = path.startsWith('/eng/');
+  const name = isEn ? 'Albaman' : 'Albamen';
+  const strings = isEn ? {
+    title: 'Albaman AI',
+    sub: 'Tap to chat with Albaman',
+    inputPlaceholder: 'Send a message...',
+    initial: 'Hi — I am Albaman. Ask me about space!',
+    send: 'Send',
+    micLabel: 'Click to speak with Albaman',
+    voiceNotSupported: 'Voice not supported on this device.'
+  } : {
+    title: 'Albamen AI',
+    sub: 'Albamen ile sohbet etmek için tıkla',
+    inputPlaceholder: 'Bir mesaj yazın...',
+    initial: 'Merhaba — ben Albamen. Bana uzay hakkında sorular sor!',
+    send: 'Gönder',
+    micLabel: 'Albamen ile konuşmak için basın',
+    voiceNotSupported: 'Ses desteği bu cihazda bulunmuyor.'
+  };
+
+  if (document.getElementById('ai-launcher-btn-global')) return;
+
+  const avatarSrc = '/assets/images/albamenai.jpg';
+
+  const floating = document.createElement('div');
+  floating.className = 'ai-floating';
+  floating.id = 'ai-floating-global';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'ai-launcher-avatar';
+  avatar.innerHTML = `<img src="${avatarSrc}" alt="${name}" loading="lazy">`;
+
+  // Launcher button
+  const btn = document.createElement('button');
+  btn.id = 'ai-launcher-btn-global';
+  btn.className = 'ai-launcher-btn';
+  btn.type = 'button';
+  btn.setAttribute('aria-haspopup','dialog');
+  btn.setAttribute('aria-label', isEn ? 'Open Albaman chat' : 'Albamen sohbetini aç');
+  btn.textContent = '💬';
+
+  floating.appendChild(avatar);
+  floating.appendChild(btn);
+
+  const footerHost = document.querySelector('footer');
+  if (footerHost) {
+    footerHost.classList.add('alba-footer-ai-dock');
+    floating.classList.add('footer-docked');
+    footerHost.appendChild(floating);
+  } else {
+    document.body.appendChild(floating);
+  }
+
+  // Panel
+  const panel = document.createElement('div');
+  panel.className = 'ai-panel-global';
+  panel.id = 'ai-panel-global';
+  panel.setAttribute('role','dialog');
+  panel.setAttribute('aria-hidden','true');
+  panel.innerHTML = `
+    <div class="ai-panel-header">
+      <div class="title">${name} AI</div>
+      <button class="ai-close" aria-label="Close">×</button>
+    </div>
+    <div class="ai-panel-body">
+      <div class="ai-messages" id="ai-messages-global">
+        <div class="ai-msg bot">${strings.initial}</div>
+      </div>
+      <div class="ai-input-row">
+        <input class="ai-input" id="ai-input-global" placeholder="${strings.inputPlaceholder}" />
+        <button class="ai-mic-btn" id="ai-mic-btn" aria-label="${strings.micLabel}">🎤</button>
+        <button class="ai-btn" id="ai-send-btn">${strings.send}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(panel);
+
+  const openPanel = () => {
+    panel.setAttribute('aria-hidden','false');
+    panel.classList.add('ai-open');
+    setTimeout(()=>messages.scrollTop = messages.scrollHeight, 50);
+  };
+  const closePanel = () => {
+    panel.setAttribute('aria-hidden','true');
+    panel.classList.remove('ai-open');
+  };
+
+  const closeBtn = panel.querySelector('.ai-close');
+  const messages = panel.querySelector('#ai-messages-global');
+  const input = panel.querySelector('#ai-input-global');
+  const micBtn = panel.querySelector('#ai-mic-btn');
+  const sendBtn = panel.querySelector('#ai-send-btn');
+
+  const togglePanel = () => {
+    const hidden = panel.getAttribute('aria-hidden') === 'true';
+    if (hidden) openPanel(); else closePanel();
+  };
+
+  btn.addEventListener('click', togglePanel);
+  avatar.addEventListener('click', togglePanel);
+  closeBtn.addEventListener('click', () => closePanel());
+
+  function appendMessage(text, who){
+    const d = document.createElement('div');
+    d.className = 'ai-msg ' + (who === 'user' ? 'user' : 'bot');
+    d.textContent = text;
+    messages.appendChild(d);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function simulateBotReply(userText){
+    setTimeout(()=>{
+      appendMessage(isEn ? `Albaman: I heard "${userText}"` : `Albamen: Duydum "${userText}"`,'bot');
+    }, 700);
+  }
+
+  sendBtn.addEventListener('click', ()=>{
+    const v = input.value.trim();
+    if(!v) return;
+    appendMessage(v,'user');
+    input.value='';
+    simulateBotReply(v);
+  });
+
+  input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ sendBtn.click(); } });
+
+  let recognition = null;
+  let listening = false;
+
+  function initRecognition(){
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SpeechRecognition) return null;
+    const r = new SpeechRecognition();
+    r.lang = isEn ? 'en-US' : 'tr-TR';
+    r.interimResults = false;
+    r.maxAlternatives = 1;
+    r.onresult = (ev) => {
+      const text = (ev.results && ev.results[0] && ev.results[0][0].transcript) || '';
+      appendMessage(text,'user');
+      simulateBotReply(text);
+    };
+    r.onend = () => { listening = false; micBtn.textContent = '🎤'; micBtn.classList.remove('listening'); };
+    r.onerror = () => { listening = false; micBtn.textContent = '🎤'; micBtn.classList.remove('listening'); };
+    return r;
+  }
+
+  micBtn.addEventListener('click', ()=>{
+    if(!recognition) recognition = initRecognition();
+    if(!recognition){ appendMessage(strings.voiceNotSupported,'bot'); return; }
+    if(listening){ recognition.stop(); listening = false; micBtn.textContent='🎤'; micBtn.classList.remove('listening'); }
+    else { recognition.start(); listening = true; micBtn.textContent='◼️'; micBtn.classList.add('listening'); }
+  });
+
+  document.addEventListener('click', (e)=>{
+    if (!panel.contains(e.target) && e.target !== btn) closePanel();
+  });
+
+  closePanel();
+}
