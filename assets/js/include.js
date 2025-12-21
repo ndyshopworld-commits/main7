@@ -186,7 +186,15 @@ function injectAiWidget(){
 
   floating.appendChild(avatar);
   floating.appendChild(btn);
-  document.body.appendChild(floating);
+
+  const footerHost = document.querySelector('footer');
+  if (footerHost) {
+    footerHost.classList.add('alba-footer-ai-dock');
+    floating.classList.add('footer-docked');
+    footerHost.appendChild(floating);
+  } else {
+    document.body.appendChild(floating);
+  }
 
   // Panel
   const panel = document.createElement('div');
