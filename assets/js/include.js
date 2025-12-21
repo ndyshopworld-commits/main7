@@ -1,18 +1,18 @@
-// Unified include. js for AlbaSpace website (Turkish)
+// Unified include.js for AlbaSpace website (Turkish)
 //
 // This script dynamically loads header and footer fragments, highlights the
 // current navigation item, provides a language switcher, keeps model-viewer
 // available with a fallback, and enhances the footer with neatly styled address
-// buttons and a call shortcut. 
+// buttons and a call shortcut.
 
 runAfterDomReady(() => {
   // Ensure a valid favicon is present (fix pages using /favicon.png that return 404)
-  (function ensureFavicon(){
+  (function ensureFavicon() {
     try {
       const existing = document.querySelector('link[rel~="icon"]');
       if (existing) {
         if (existing.getAttribute('href') === '/favicon.png') {
-          existing.setAttribute('href','/assets/images/albalogo.png');
+          existing.setAttribute('href', '/assets/images/albalogo.png');
         }
         return;
       }
@@ -41,7 +41,7 @@ runAfterDomReady(() => {
   const ensureModelNavLoader = createModelNavLoader();
 
   // ---------------- Mobile nav override ----------------
-  if (! document.getElementById("albaspace-nav-override-style")) {
+  if (!document.getElementById("albaspace-nav-override-style")) {
     const navStyle = document.createElement("style");
     navStyle.id = "albaspace-nav-override-style";
     navStyle.textContent = `
@@ -130,185 +130,165 @@ runAfterDomReady(() => {
   // ===== GLOBAL AI WIDGET (Albamen / Albaman) =====
   injectAiWidget();
 
-});
+  function injectAiWidget() {
+    const path = window.location.pathname || '/';
+    const isEn = path.startsWith('/eng/');
 
-function runAfterDomReady(fn){
+    // Тексты
+    const strings = isEn ? {
+      placeholder: 'Send a message...',
+      listening: 'Listening...',
+      connect: 'Talk to interrupt',
+      initialStatus: 'How was this conversation?',
+      voiceNotSupported: 'Voice not supported'
+    } : {
+      placeholder: 'Bir mesaj yazın...',
+      listening: 'Dinliyorum...',
+      connect: 'Bağlanıyor...',
+      initialStatus: 'Merhaba, ben Albamen',
+      voiceNotSupported: 'Ses desteği yok'
+    };
+
+    if (document.getElementById('ai-floating-global')) return;
+
+    // 1. Создаем контейнер для кнопок (Картинка + Кнопка вызова)
+    const floating = document.createElement('div');
+    floating.className = 'ai-floating';
+    floating.id = 'ai-floating-global';
+
+    // Путь к изображению
+    const avatarSrc = '/assets/images/albamenai.jpg';
+
+    // HTML для кнопок в футере
+    floating.innerHTML = `
+      <div class="ai-hero-avatar" id="ai-avatar-trigger">
+        <img src="${avatarSrc}" alt="Albamen AI">
+      </div>
+      <button class="ai-call-btn pulse" id="ai-call-trigger" aria-label="Call AI">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+        </svg>
+      </button>
+    `;
+
+    // Логика привязки к футеру
+    const footerHost = document.querySelector('footer');
+    if (footerHost) {
+      if (getComputedStyle(footerHost).position === 'static') {
+        footerHost.style.position = 'relative';
+      }
+      floating.classList.add('footer-docked');
+      footerHost.appendChild(floating);
+    } else {
+      document.body.appendChild(floating);
+    }
+
+    // 2. Создаем Панель Чата (Белую)
+    const panel = document.createElement('div');
+    panel.className = 'ai-panel-global';
+    panel.innerHTML = `
+      <div class="ai-panel-header">
+        <button class="ai-close-icon" id="ai-close-btn">×</button>
+      </div>
+      
+      <div class="ai-panel-body">
+        
+        <div class="ai-messages-list" id="ai-messages-list"></div>
+
+        <div class="ai-chat-avatar-large">
+          <img src="${avatarSrc}" alt="Albamen">
+        </div>
+        
+        <div class="ai-status-text" id="ai-status-text">${strings.initialStatus}</div>
+
+        <div class="ai-input-area">
+          <button class="ai-action-btn ai-mic-btn-panel" id="ai-mic-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+          </button>
+          <input type="text" class="ai-input" id="ai-input-field" placeholder="${strings.placeholder}">
+          <button class="ai-action-btn ai-send-btn-panel" id="ai-send-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(panel);
+
+    // --- Логика работы ---
+    const avatarTrigger = document.getElementById('ai-avatar-trigger');
+    const callTrigger = document.getElementById('ai-call-trigger');
+    const closeBtn = document.getElementById('ai-close-btn');
+    const sendBtn = document.getElementById('ai-send-btn');
+    const micBtn = document.getElementById('ai-mic-btn');
+    const inputField = document.getElementById('ai-input-field');
+    const msgList = document.getElementById('ai-messages-list');
+    const statusText = document.getElementById('ai-status-text');
+
+    const openPanel = () => {
+      panel.classList.add('ai-open');
+    };
+
+    const closePanel = () => {
+      panel.classList.remove('ai-open');
+      panel.classList.remove('chat-active'); // Сброс состояния
+      statusText.style.display = 'block'; // Вернуть статус
+    };
+
+    // Открытие по клику на аватар или кнопку звонка
+    avatarTrigger.addEventListener('click', openPanel);
+    callTrigger.addEventListener('click', openPanel);
+    closeBtn.addEventListener('click', closePanel);
+
+    // Отправка сообщений
+    function sendMessage() {
+      const txt = inputField.value.trim();
+      if (!txt) return;
+
+      // Переход в режим активного чата (скрывает большой аватар)
+      panel.classList.add('chat-active');
+
+      // Добавляем сообщение юзера
+      addMessage(txt, 'user');
+      inputField.value = '';
+
+      // Имитация ответа
+      setTimeout(() => {
+        addMessage(isEn ? "I am Albamen, ready to help!" : "Ben Albamen, nasıl yardımcı olabilirim?", 'bot');
+      }, 1000);
+    }
+
+    function addMessage(text, type) {
+      const div = document.createElement('div');
+      div.className = `ai-msg ${type}`;
+      div.textContent = text;
+      msgList.appendChild(div);
+      msgList.scrollTop = msgList.scrollHeight;
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    inputField.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    // Простая логика микрофона (заглушка для UI)
+    micBtn.addEventListener('click', () => {
+      panel.classList.add('chat-active');
+      statusText.textContent = strings.listening;
+      inputField.focus();
+    });
+  }
+
+}); // END runAfterDomReady
+
+
+// ================= HELPER FUNCTIONS =================
+
+function runAfterDomReady(fn) {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', fn, { once: true });
   } else {
     fn();
   }
-}
-
-function injectAiWidget(){
-  const path = window.location.pathname || '/';
-  // Run on ALL pages (user requested global widget)
-  const isEn = path.startsWith('/eng/');
-  const name = isEn ? 'Albaman' : 'Albamen';
-  const strings = isEn ? {
-    title: 'Albaman AI',
-    sub: 'Tap to chat with Albaman',
-    inputPlaceholder: 'Send a message...',
-    initial: 'Hi — I am Albaman. Ask me about space!',
-    send: 'Send',
-    micLabel: 'Click to speak with Albaman',
-    voiceNotSupported: 'Voice not supported on this device.'
-  } : {
-    title: 'Albamen AI',
-    sub: 'Albamen ile sohbet etmek için tıkla',
-    inputPlaceholder: 'Bir mesaj yazın...',
-    initial: 'Merhaba — ben Albamen. Bana uzay hakkında sorular sor!',
-    send: 'Gönder',
-    micLabel: 'Albamen ile konuşmak için basın',
-    voiceNotSupported: 'Ses desteği bu cihazda bulunmuyor.'
-  };
-
-  if (document.getElementById('ai-launcher-btn-global')) return;
-
-  const avatarSrc = '/assets/images/albamenai.jpg';
-
-  const floating = document.createElement('div');
-  floating.className = 'ai-floating';
-  floating.id = 'ai-floating-global';
-
-  const avatar = document.createElement('div');
-  avatar.className = 'ai-launcher-avatar';
-  avatar.innerHTML = `<img src="${avatarSrc}" alt="${name}" loading="lazy">`;
-
-  // Launcher button
-  const btn = document.createElement('button');
-  btn.id = 'ai-launcher-btn-global';
-  btn.className = 'ai-launcher-btn';
-  btn.type = 'button';
-  btn.setAttribute('aria-haspopup','dialog');
-  btn.setAttribute('aria-label', isEn ? 'Open Albaman chat' : 'Albamen sohbetini aç');
-  btn.textContent = '💬';
-
-  floating.appendChild(avatar);
-  floating.appendChild(btn);
-
-  const footerHost = document.querySelector('footer');
-  if (footerHost) {
-    footerHost.classList.add('alba-footer-ai-dock');
-    floating.classList.add('footer-docked');
-    footerHost.appendChild(floating);
-  } else {
-    document.body.appendChild(floating);
-  }
-
-  // Panel
-  const panel = document.createElement('div');
-  panel.className = 'ai-panel-global';
-  panel.id = 'ai-panel-global';
-  panel.setAttribute('role','dialog');
-  panel.setAttribute('aria-hidden','true');
-  panel.innerHTML = `
-    <div class="ai-panel-header">
-      <div class="title">${name} AI</div>
-      <button class="ai-close" aria-label="Close">×</button>
-    </div>
-    <div class="ai-panel-body">
-      <div class="ai-messages" id="ai-messages-global">
-        <div class="ai-msg bot">${strings.initial}</div>
-      </div>
-      <div class="ai-input-row">
-        <input class="ai-input" id="ai-input-global" placeholder="${strings.inputPlaceholder}" />
-        <button class="ai-mic-btn" id="ai-mic-btn" aria-label="${strings.micLabel}">🎤</button>
-        <button class="ai-btn" id="ai-send-btn">${strings.send}</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(panel);
-
-  const openPanel = () => {
-    panel.setAttribute('aria-hidden','false');
-    panel.classList.add('ai-open');
-    setTimeout(()=>messages.scrollTop = messages.scrollHeight, 50);
-  };
-  const closePanel = () => {
-    panel.setAttribute('aria-hidden','true');
-    panel.classList.remove('ai-open');
-  };
-
-  const closeBtn = panel.querySelector('.ai-close');
-  const messages = panel.querySelector('#ai-messages-global');
-  const input = panel.querySelector('#ai-input-global');
-  const micBtn = panel.querySelector('#ai-mic-btn');
-  const sendBtn = panel.querySelector('#ai-send-btn');
-
-  const togglePanel = () => {
-    const hidden = panel.getAttribute('aria-hidden') === 'true';
-    if (hidden) openPanel(); else closePanel();
-  };
-
-  btn.addEventListener('click', togglePanel);
-  avatar.addEventListener('click', togglePanel);
-  closeBtn.addEventListener('click', () => closePanel());
-
-  function appendMessage(text, who){
-    const d = document.createElement('div');
-    d.className = 'ai-msg ' + (who === 'user' ? 'user' : 'bot');
-    d.textContent = text;
-    messages.appendChild(d);
-    messages.scrollTop = messages.scrollHeight;
-  }
-
-  function simulateBotReply(userText){
-    // Placeholder bot reply — simple echo with small delay. Replace with real backend later.
-    setTimeout(()=>{
-      appendMessage(isEn ? `Albaman: I heard "${userText}"` : `Albamen: Duydum "${userText}"`,'bot');
-    }, 700);
-  }
-
-  sendBtn.addEventListener('click', ()=>{
-    const v = input.value.trim();
-    if(!v) return;
-    appendMessage(v,'user');
-    input.value='';
-    simulateBotReply(v);
-  });
-
-  input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ sendBtn.click(); } });
-
-  // Microphone handling via Web Speech API (graceful fallback)
-  let recognition = null;
-  let listening = false;
-
-  function initRecognition(){
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if(!SpeechRecognition) return null;
-    const r = new SpeechRecognition();
-    r.lang = isEn ? 'en-US' : 'tr-TR';
-    r.interimResults = false;
-    r.maxAlternatives = 1;
-    r.onresult = (ev) => {
-      const text = (ev.results && ev.results[0] && ev.results[0][0].transcript) || '';
-      appendMessage(text,'user');
-      simulateBotReply(text);
-    };
-    r.onend = () => { listening = false; micBtn.textContent = '🎤'; micBtn.classList.remove('listening'); };
-    r.onerror = (e) => { listening = false; micBtn.textContent = '🎤'; micBtn.classList.remove('listening'); };
-    return r;
-  }
-
-  micBtn.addEventListener('click', ()=>{
-    if(!recognition) recognition = initRecognition();
-    if(!recognition){
-      // Not supported — toggle simple speak prompt to type
-      appendMessage(strings.voiceNotSupported,'bot');
-      return;
-    }
-    if(listening){ recognition.stop(); listening = false; micBtn.textContent='🎤'; micBtn.classList.remove('listening'); }
-    else { recognition.start(); listening = true; micBtn.textContent='◼️'; micBtn.classList.add('listening'); }
-  });
-
-  // Close panel if user clicks outside
-  document.addEventListener('click', (e)=>{
-    if (!panel.contains(e.target) && e.target !== btn) closePanel();
-  });
-
-  // Start closed
-  closePanel();
 }
 
 // ================= MODEL VIEWER LOADER =================
@@ -324,7 +304,7 @@ function injectModelViewerStyles() {
       margin-top: 30px;
       background: rgba(0, 0, 0, 0.65);
       border-radius: 12px;
-      box-shadow:  0 0 30px rgba(0, 150, 255, 0.5);
+      box-shadow: 0 0 30px rgba(0, 150, 255, 0.5);
       display: block;
     }
 
@@ -337,11 +317,11 @@ function injectModelViewerStyles() {
 
     /* Ensure model-viewer is visible and interactive */
     model-viewer[ar-status="session-started"] {
-      display: block ! important;
+      display: block !important;
     }
 
     /* Loading state */
-    model-viewer:: part(default-progress-bar) {
+    model-viewer::part(default-progress-bar) {
       background: linear-gradient(90deg, #00b4ff, #00e5ff);
     }
   `;
@@ -351,7 +331,7 @@ function injectModelViewerStyles() {
 function ensureModelViewerLoaded() {
   // Первый вариант: проверяем наличие model-viewer элемента
   const hasModelViewer = !!document.querySelector("model-viewer");
-  
+
   if (!hasModelViewer) return;
 
   // Если custom element уже зарегистрирован - ничего не делаем
@@ -361,14 +341,14 @@ function ensureModelViewerLoaded() {
 
   // Вариант 1: Пытаемся загрузить из Google CDN (основной)
   const googleSrc = "https://ajax.googleapis.com/ajax/libs/model-viewer/3.0.0/model-viewer.min.js";
-  
+
   // Вариант 2: Резервный источник
   const fallbackSrc = "https://unpkg.com/@google/model-viewer@3.0.0/dist/model-viewer.min.js";
 
   // Проверяем, что скрипт еще не загружается
   const existingGoogleScript = document.querySelector(`script[src="${googleSrc}"]`);
   const existingFallbackScript = document.querySelector(`script[src="${fallbackSrc}"]`);
-  
+
   if (existingGoogleScript || existingFallbackScript) {
     return;
   }
@@ -381,33 +361,33 @@ function ensureModelViewerLoaded() {
 
     const script = document.createElement("script");
     script.type = "module";
-    
+
     // Сначала пытаемся основной CDN
     script.src = googleSrc;
-    
+
     // Если основной CDN не работает, переключаемся на резервный
     script.onerror = () => {
       if (window.customElements && window.customElements.get("model-viewer")) {
         return;
       }
-      
+
       const fallbackScript = document.createElement("script");
-      fallbackScript. type = "module";
+      fallbackScript.type = "module";
       fallbackScript.src = fallbackSrc;
       document.head.appendChild(fallbackScript);
     };
-    
+
     document.head.appendChild(script);
   };
 
   // Даем время на загрузку главного скрипта в head
   setTimeout(loadModelViewer, 800);
-  
+
   // На всякий случай - финальная проверка через 3 секунды
   setTimeout(() => {
     if (!window.customElements || !window.customElements.get("model-viewer")) {
       const fallbackScript = document.createElement("script");
-      fallbackScript. type = "module";
+      fallbackScript.type = "module";
       fallbackScript.src = fallbackSrc;
       fallbackScript.async = true;
       document.head.appendChild(fallbackScript);
@@ -439,16 +419,16 @@ function createPreloaderLoader() {
   };
 }
 
-function createModelPreloaderLoader(){
+function createModelPreloaderLoader() {
   let loaded = false;
 
-  return function ensureModelPreloader(){
+  return function ensureModelPreloader() {
     if (loaded) return;
     const hasViewer = !!document.querySelector('model-viewer');
     if (!hasViewer) return;
 
     const existing = document.querySelector('script[data-model-preloader]');
-    if (existing){
+    if (existing) {
       loaded = true;
       return;
     }
@@ -462,14 +442,14 @@ function createModelPreloaderLoader(){
   };
 }
 
-function createModelNavLoader(){
+function createModelNavLoader() {
   let loaded = false;
 
-  return function ensureModelNavLoader(){
+  return function ensureModelNavLoader() {
     if (loaded) return;
 
     const existing = document.querySelector('script[data-model-nav-loader]');
-    if (existing){ loaded = true; return; }
+    if (existing) { loaded = true; return; }
 
     const script = document.createElement('script');
     script.src = '/assets/js/model-nav-loader.js';
@@ -585,13 +565,13 @@ function enhanceFooter(root) {
   if (!addressContainer) return;
 
   const rawAddrText = (addressContainer.innerText || "").trim();
-  if (! rawAddrText) return;
+  if (!rawAddrText) return;
 
   const merkezBlock = extractSection(rawAddrText, /Merkez Ofis/i, /Adana Şube/i);
   const adanaBlock = extractSection(rawAddrText, /Adana Şube/i, null);
 
   const phoneRaw = findPhone(rawAddrText) || findPhone(footer.innerText || "");
-  const phoneTel = phoneRaw ?  phoneRaw.replace(/[^\d+]/g, "") : "";
+  const phoneTel = phoneRaw ? phoneRaw.replace(/[^\d+]/g, "") : "";
 
   const mailAnchors = footer.querySelectorAll('a[href^="mailto:"]');
   mailAnchors.forEach((el) => el.remove());
@@ -639,7 +619,7 @@ function enhanceFooter(root) {
 }
 
 function buildMapButton(blockText) {
-  if (! blockText) return null;
+  if (!blockText) return null;
   const lines = blockText
     .split('\n')
     .map((s) => s.trim())
@@ -673,7 +653,7 @@ function extractSection(text, startRegex, beforeRegex) {
   if (start === -1) return "";
 
   const sliced = text.slice(start);
-  if (! beforeRegex) return sliced.trim();
+  if (!beforeRegex) return sliced.trim();
 
   const end = sliced.search(beforeRegex);
   if (end === -1) return sliced.trim();
@@ -684,7 +664,7 @@ function extractSection(text, startRegex, beforeRegex) {
 function findPhone(text) {
   if (!text) return "";
   const m = text.match(/(\+?\s*\d[\d\s()-]{7,}\d)/);
-  return m ? m[1]. trim() : "";
+  return m ? m[1].trim() : "";
 }
 
 function escapeHtml(str) {
@@ -776,3 +756,5 @@ function injectFooterStyles() {
   `;
   document.head.appendChild(s);
 }
+
+
