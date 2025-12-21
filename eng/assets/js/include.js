@@ -201,8 +201,48 @@ function injectAiWidget(){
   const path = window.location.pathname || '/';
   const isEn = path.startsWith('/eng/');
   const name = isEn ? 'Albaman' : 'Albamen';
+  const strings = isEn ? {
+    title: 'Albaman AI',
+    sub: 'Tap to start voice chat with Albaman!',
+    consentTitle: 'Before we start',
+    consentLines: [
+      'When you start using this assistant and click "I Accept":',
+      'Chats may be recorded to keep the experience better and safer.',
+      'Data is stored securely as described in the Privacy Policy.',
+      'Trusted providers may help improve the service.',
+      'If you prefer not to record, you can decline and skip using the assistant.'
+    ],
+    reject: 'Decline',
+    accept: 'I Accept',
+    inputPlaceholder: 'Send a message...',
+    initial: 'Hi — I am Albaman. Ask me about space!',
+    send: 'Send',
+    micLabel: 'Click to speak with Albaman',
+    voiceNotSupported: 'Voice not supported on this device.'
+  } : {
+    title: 'Albamen AI',
+    sub: 'Albamen ile sesli sohbet etmek için tıkla!',
+    consentTitle: 'Başlamadan önce',
+    consentLines: [
+      'Bu asistana başladığında ve "Kabul ediyorum" dediğinde:',
+      'Sohbetler deneyimi güvenli ve daha iyi kılmak için kaydedilebilir.',
+      'Veriler, Gizlilik Politikası’nda açıklandığı gibi güvenle saklanır.',
+      'Hizmeti geliştirmek için güvenilir sağlayıcılarla paylaşılabilir.',
+      'Kayıt istemiyorsan reddedebilir ve asistanı kullanmayabilirsin.'
+    ],
+    reject: 'Reddet',
+    accept: 'Kabul et',
+    inputPlaceholder: 'Bir mesaj yazın...',
+    initial: 'Merhaba — ben Albamen. Bana uzay hakkında sorular sor!',
+    send: 'Gönder',
+    micLabel: 'Albamen ile konuşmak için basın',
+    voiceNotSupported: 'Ses desteği bu cihazda bulunmuyor.'
+  };
+  const consentKey = 'albamen-ai-consent';
 
   if (document.getElementById('ai-launcher-btn-global')) return;
+
+  const avatarSrc = '/assets/images/albamenai.jpg';
 
   // Launcher button
   const btn = document.createElement('button');
@@ -211,8 +251,32 @@ function injectAiWidget(){
   btn.type = 'button';
   btn.setAttribute('aria-haspopup','dialog');
   btn.setAttribute('aria-label', isEn ? 'Open Albaman chat' : 'Albamen sohbetini aç');
-  btn.innerHTML = `<span class="ai-dot" aria-hidden="true"></span>${name}`;
+  btn.innerHTML = `
+    <span class="ai-launcher-avatar"><img src="${avatarSrc}" alt="${name}" loading="lazy"></span>
+    <span class="ai-launcher-copy">
+      <span class="ai-launcher-title">${name} AI</span>
+      <span class="ai-launcher-sub"><span class="ai-launcher-phone">📞</span>${strings.sub}</span>
+    </span>
+  `;
   document.body.appendChild(btn);
+
+  // Consent modal
+  const consentOverlay = document.createElement('div');
+  consentOverlay.className = 'ai-consent-overlay';
+  consentOverlay.style.display = 'none';
+  consentOverlay.innerHTML = `
+    <div class="ai-consent-card" role="dialog" aria-modal="true" aria-label="${strings.consentTitle}">
+      <div class="ai-consent-title" style="font-weight:800; font-size:16px;">${strings.consentTitle}</div>
+      <div class="ai-consent-lines">
+        ${strings.consentLines.map(l => `<div>${l}</div>`).join('')}
+      </div>
+      <div class="ai-consent-actions">
+        <button class="ai-btn-secondary" type="button" data-consent="reject">${strings.reject}</button>
+        <button class="ai-btn-primary" type="button" data-consent="accept">${strings.accept}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(consentOverlay);
 
   // Panel
   const panel = document.createElement('div');
@@ -222,17 +286,18 @@ function injectAiWidget(){
   panel.setAttribute('aria-hidden','true');
   panel.innerHTML = `
     <div class="ai-panel-header">
-      <div class="title">${name}</div>
+      <div class="title">${name} AI</div>
       <button class="ai-close" aria-label="Close">×</button>
     </div>
     <div class="ai-panel-body">
+      <div class="ai-orbit"><img src="${avatarSrc}" alt="${name} avatar"></div>
       <div class="ai-messages" id="ai-messages-global">
-        <div class="ai-msg bot">${isEn ? 'Hi — I am Albaman. Ask me about space!' : 'Merhaba — ben Albamen. Bana uzay hakkında sorular sor!'}</div>
+        <div class="ai-msg bot">${strings.initial}</div>
       </div>
       <div class="ai-input-row">
-        <input class="ai-input" id="ai-input-global" placeholder="${isEn ? 'Type a message...' : 'Mesaj yazın...'}" />
-        <button class="ai-mic-btn" id="ai-mic-btn" aria-label="${isEn ? 'Click to speak with Albaman' : 'Albamen ile konuşmak için basın'}">🎤</button>
-        <button class="ai-btn" id="ai-send-btn">${isEn ? 'Send' : 'Gönder'}</button>
+        <input class="ai-input" id="ai-input-global" placeholder="${strings.inputPlaceholder}" />
+        <button class="ai-mic-btn" id="ai-mic-btn" aria-label="${strings.micLabel}">🎤</button>
+        <button class="ai-btn" id="ai-send-btn">${strings.send}</button>
       </div>
     </div>
   `;
@@ -247,8 +312,22 @@ function injectAiWidget(){
   const micBtn = panel.querySelector('#ai-mic-btn');
   const sendBtn = panel.querySelector('#ai-send-btn');
 
-  btn.addEventListener('click', () => openPanel());
+  const consentAccept = consentOverlay.querySelector('[data-consent="accept"]');
+  const consentReject = consentOverlay.querySelector('[data-consent="reject"]');
+
+  const openConsent = () => { consentOverlay.style.display = 'flex'; };
+  const closeConsent = () => { consentOverlay.style.display = 'none'; };
+
+  const hasConsent = () => localStorage.getItem(consentKey) === 'yes';
+  const giveConsent = () => localStorage.setItem(consentKey, 'yes');
+
+  btn.addEventListener('click', () => {
+    if (!hasConsent()) { openConsent(); return; }
+    openPanel();
+  });
   closeBtn.addEventListener('click', () => closePanel());
+  consentAccept.addEventListener('click', () => { giveConsent(); closeConsent(); openPanel(); });
+  consentReject.addEventListener('click', () => closeConsent());
 
   function appendMessage(text, who){
     const d = document.createElement('div');
@@ -296,10 +375,7 @@ function injectAiWidget(){
 
   micBtn.addEventListener('click', ()=>{
     if(!recognition) recognition = initRecognition();
-    if(!recognition){
-      appendMessage(isEn ? 'Voice not supported on this device.' : 'Ses desteği bu cihazda bulunmuyor.','bot');
-      return;
-    }
+    if(!recognition){ appendMessage(strings.voiceNotSupported,'bot'); return; }
     if(listening){ recognition.stop(); listening = false; micBtn.textContent='🎤'; micBtn.classList.remove('listening'); }
     else { recognition.start(); listening = true; micBtn.textContent='◼️'; micBtn.classList.add('listening'); }
   });
