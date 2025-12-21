@@ -5,7 +5,7 @@
 // available with a fallback, and enhances the footer with neatly styled address
 // buttons and a call shortcut. 
 
-document.addEventListener("DOMContentLoaded", () => {
+runAfterDomReady(() => {
   // Ensure a valid favicon is present (fix pages using /favicon.png that return 404)
   (function ensureFavicon(){
     try {
@@ -131,6 +131,14 @@ document.addEventListener("DOMContentLoaded", () => {
   injectAiWidget();
 
 });
+
+function runAfterDomReady(fn){
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fn, { once: true });
+  } else {
+    fn();
+  }
+}
 
 function injectAiWidget(){
   const path = window.location.pathname || '/';

@@ -7,7 +7,7 @@
 // duplicated event handlers and ensures consistent behavior across
 // English pages.
 
-document.addEventListener("DOMContentLoaded", () => {
+runAfterDomReady(() => {
   const includes = document.querySelectorAll("[data-include], [data-include-html]");
 
   // Ensure model-viewer registers even if the primary CDN fails to load
@@ -109,6 +109,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   injectAiWidget();
 });
+
+function runAfterDomReady(fn){
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fn, { once: true });
+  } else {
+    fn();
+  }
+}
 
 function markActiveNav() {
   const path = window.location.pathname || "/";
