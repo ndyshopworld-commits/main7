@@ -197,6 +197,7 @@ body{
   display:flex;
   flex-direction:column;
   overflow:hidden;
+  transition: transform .2s ease, opacity .2s ease;
 }
 .ai-panel-global[aria-hidden="true"]{ display:none }
 .ai-panel-header{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.06) }
