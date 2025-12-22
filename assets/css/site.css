@@ -654,6 +654,7 @@ footer.footer{
   }
   .footer--tr .footer-actions{
     width:100%;
+    grid-template-columns:1fr;
   }
 }
 
@@ -668,6 +669,12 @@ footer.footer{
   .footer--tr .footer-social--grid{
     grid-template-columns:repeat(2, auto);
     justify-items:end;
+  }
+  .footer--tr .footer-actions{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    width:100%;
+    max-width:640px;
   }
   .footer-actions{
     display:flex;
