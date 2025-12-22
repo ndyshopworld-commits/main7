@@ -6,7 +6,7 @@
 // buttons and a call shortcut.
 
 runAfterDomReady(() => {
-  // Ensure a valid favicon is present (fix pages using /favicon.png that return 404)
+  // Ensure a valid favicon is present
   (function ensureFavicon() {
     try {
       const existing = document.querySelector('link[rel~="icon"]');
@@ -28,14 +28,12 @@ runAfterDomReady(() => {
 
   const includes = document.querySelectorAll("[data-include], [data-include-html]");
 
-  // УЛУЧШЕНИЕ 1: Загружаем CSS стили для model-viewer ДО всего остального
+  // Load CSS for model-viewer
   injectModelViewerStyles();
 
-  // УЛУЧШЕНИЕ 2: Гарантируем загрузку model-viewer скрипта
+  // Ensure model-viewer script is loaded
   ensureModelViewerLoaded();
 
-  // We need the preloader script to run even when the header is injected via
-  // include.js (since scripts inside innerHTML are not executed by default).
   const ensurePreloaderScript = createPreloaderLoader();
   const ensureModelPreloader = createModelPreloaderLoader();
   const ensureModelNavLoader = createModelNavLoader();
@@ -62,8 +60,6 @@ runAfterDomReady(() => {
           z-index: 1001;
           backdrop-filter: blur(6px);
           -webkit-backdrop-filter: blur(6px);
-
-          /* slide-down effect */
           display: flex;
           opacity: 0;
           transform: translateY(-8px);
@@ -78,7 +74,6 @@ runAfterDomReady(() => {
           transform: translateY(0);
           pointer-events: auto;
         }
-
         nav.main-nav a {
           padding: 12px 18px;
           font-size: 14px;
@@ -123,8 +118,6 @@ runAfterDomReady(() => {
     });
   }
 
-  // In case the page already contains <model-viewer> or was server-rendered
-  // call loader once more to be safe.
   ensureModelPreloader();
 
   // ===== GLOBAL AI WIDGET (Albamen / Albaman) =====
@@ -134,7 +127,7 @@ runAfterDomReady(() => {
     const path = window.location.pathname || '/';
     const isEn = path.startsWith('/eng/');
 
-    // Тексты
+    // Texts
     const strings = isEn ? {
       placeholder: 'Send a message...',
       listening: 'Listening...',
@@ -151,15 +144,13 @@ runAfterDomReady(() => {
 
     if (document.getElementById('ai-floating-global')) return;
 
-    // 1. Создаем контейнер для кнопок (Картинка + Кнопка вызова)
+    // 1. Create Floating Buttons
     const floating = document.createElement('div');
     floating.className = 'ai-floating';
     floating.id = 'ai-floating-global';
 
-    // Путь к изображению
     const avatarSrc = '/assets/images/albamenai.jpg';
 
-    // HTML для кнопок в футере
     floating.innerHTML = `
       <div class="ai-hero-avatar" id="ai-avatar-trigger">
         <img src="${avatarSrc}" alt="Albamen AI">
@@ -171,7 +162,7 @@ runAfterDomReady(() => {
       </button>
     `;
 
-    // Логика привязки к футеру
+    // Dock to footer if exists
     const footerHost = document.querySelector('footer');
     if (footerHost) {
       if (getComputedStyle(footerHost).position === 'static') {
@@ -183,7 +174,7 @@ runAfterDomReady(() => {
       document.body.appendChild(floating);
     }
 
-    // 2. Создаем Панель Чата (Белую)
+    // 2. Create Panel
     const panel = document.createElement('div');
     panel.className = 'ai-panel-global';
     panel.innerHTML = `
@@ -192,7 +183,6 @@ runAfterDomReady(() => {
       </div>
       
       <div class="ai-panel-body">
-        
         <div class="ai-messages-list" id="ai-messages-list"></div>
 
         <div class="ai-chat-avatar-large">
@@ -214,7 +204,7 @@ runAfterDomReady(() => {
     `;
     document.body.appendChild(panel);
 
-    // --- Логика работы ---
+    // --- Logic ---
     const avatarTrigger = document.getElementById('ai-avatar-trigger');
     const callTrigger = document.getElementById('ai-call-trigger');
     const closeBtn = document.getElementById('ai-close-btn');
@@ -230,37 +220,66 @@ runAfterDomReady(() => {
 
     const closePanel = () => {
       panel.classList.remove('ai-open');
-      panel.classList.remove('chat-active'); // Сброс состояния
-      statusText.style.display = 'block'; // Вернуть статус
+      panel.classList.remove('chat-active');
+      statusText.style.display = 'block';
     };
 
-    // Открытие по клику на аватар или кнопку звонка
     avatarTrigger.addEventListener('click', openPanel);
     callTrigger.addEventListener('click', openPanel);
     closeBtn.addEventListener('click', closePanel);
 
-    // Отправка сообщений
+    // === ФУНКЦИЯ ОТПРАВКИ СООБЩЕНИЙ ЧЕРЕЗ CLOUDFLARE ===
     function sendMessage() {
       const txt = inputField.value.trim();
       if (!txt) return;
 
-      // Переход в режим активного чата (скрывает большой аватар)
+      // Скрываем аватарку, показываем чат
       panel.classList.add('chat-active');
 
-      // Добавляем сообщение юзера
+      // 1. Добавляем сообщение пользователя
       addMessage(txt, 'user');
       inputField.value = '';
 
-      // Имитация ответа
-      setTimeout(() => {
-        addMessage(isEn ? "I am Albamen, ready to help!" : "Ben Albamen, nasıl yardımcı olabilirim?", 'bot');
-      }, 1000);
+      // 2. Показываем "..." (ИИ печатает)
+      const loadingId = 'loading-' + Date.now();
+      addMessage("...", 'bot', loadingId);
+
+      // 3. Отправляем запрос на твой Cloudflare Worker
+      const workerUrl = 'https://divine-flower-a0ae.nncdecdgc.workers.dev';
+
+      fetch(workerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: txt })
+      })
+      .then(res => res.json())
+      .then(data => {
+        // Удаляем "..."
+        const loader = document.getElementById(loadingId);
+        if(loader) loader.remove();
+
+        // Показываем ответ
+        if (data.reply) {
+          addMessage(data.reply, 'bot');
+        } else {
+          addMessage("Error: AI did not reply.", 'bot');
+        }
+      })
+      .catch(err => {
+        console.error("AI Error:", err);
+        const loader = document.getElementById(loadingId);
+        if(loader) loader.remove();
+        addMessage("Connection error. Try again.", 'bot');
+      });
     }
 
-    function addMessage(text, type) {
+    // Вспомогательная функция добавления сообщения в UI
+    // Теперь поддерживает ID (для удаления лоадера)
+    function addMessage(text, type, id = null) {
       const div = document.createElement('div');
       div.className = `ai-msg ${type}`;
       div.textContent = text;
+      if(id) div.id = id; 
       msgList.appendChild(div);
       msgList.scrollTop = msgList.scrollHeight;
     }
@@ -270,7 +289,7 @@ runAfterDomReady(() => {
       if (e.key === 'Enter') sendMessage();
     });
 
-    // Простая логика микрофона (заглушка для UI)
+    // Mic placeholder
     micBtn.addEventListener('click', () => {
       panel.classList.add('chat-active');
       statusText.textContent = strings.listening;
@@ -307,20 +326,15 @@ function injectModelViewerStyles() {
       box-shadow: 0 0 30px rgba(0, 150, 255, 0.5);
       display: block;
     }
-
     @media (max-width: 768px) {
       model-viewer {
         height: 420px;
         margin-top: 20px;
       }
     }
-
-    /* Ensure model-viewer is visible and interactive */
     model-viewer[ar-status="session-started"] {
       display: block !important;
     }
-
-    /* Loading state */
     model-viewer::part(default-progress-bar) {
       background: linear-gradient(90deg, #00b4ff, #00e5ff);
     }
@@ -329,61 +343,34 @@ function injectModelViewerStyles() {
 }
 
 function ensureModelViewerLoaded() {
-  // Первый вариант: проверяем наличие model-viewer элемента
   const hasModelViewer = !!document.querySelector("model-viewer");
-
   if (!hasModelViewer) return;
+  if (window.customElements && window.customElements.get("model-viewer")) return;
 
-  // Если custom element уже зарегистрирован - ничего не делаем
-  if (window.customElements && window.customElements.get("model-viewer")) {
-    return;
-  }
-
-  // Вариант 1: Пытаемся загрузить из Google CDN (основной)
   const googleSrc = "https://ajax.googleapis.com/ajax/libs/model-viewer/3.0.0/model-viewer.min.js";
-
-  // Вариант 2: Резервный источник
   const fallbackSrc = "https://unpkg.com/@google/model-viewer@3.0.0/dist/model-viewer.min.js";
 
-  // Проверяем, что скрипт еще не загружается
   const existingGoogleScript = document.querySelector(`script[src="${googleSrc}"]`);
   const existingFallbackScript = document.querySelector(`script[src="${fallbackSrc}"]`);
 
-  if (existingGoogleScript || existingFallbackScript) {
-    return;
-  }
+  if (existingGoogleScript || existingFallbackScript) return;
 
-  // Пытаемся загрузить с основного CDN
   const loadModelViewer = () => {
-    if (window.customElements && window.customElements.get("model-viewer")) {
-      return; // Успешно загружен
-    }
-
+    if (window.customElements && window.customElements.get("model-viewer")) return;
     const script = document.createElement("script");
     script.type = "module";
-
-    // Сначала пытаемся основной CDN
     script.src = googleSrc;
-
-    // Если основной CDN не работает, переключаемся на резервный
     script.onerror = () => {
-      if (window.customElements && window.customElements.get("model-viewer")) {
-        return;
-      }
-
+      if (window.customElements && window.customElements.get("model-viewer")) return;
       const fallbackScript = document.createElement("script");
       fallbackScript.type = "module";
       fallbackScript.src = fallbackSrc;
       document.head.appendChild(fallbackScript);
     };
-
     document.head.appendChild(script);
   };
 
-  // Даем время на загрузку главного скрипта в head
   setTimeout(loadModelViewer, 800);
-
-  // На всякий случай - финальная проверка через 3 секунды
   setTimeout(() => {
     if (!window.customElements || !window.customElements.get("model-viewer")) {
       const fallbackScript = document.createElement("script");
@@ -397,19 +384,12 @@ function ensureModelViewerLoaded() {
 
 function createPreloaderLoader() {
   let loaded = false;
-
   return function ensurePreloaderScript() {
     if (loaded) return;
-
     const preloader = document.getElementById("preloader");
     if (!preloader) return;
-
     const existing = document.querySelector("script[data-preloader-loader]");
-    if (existing) {
-      loaded = true;
-      return;
-    }
-
+    if (existing) { loaded = true; return; }
     const script = document.createElement("script");
     script.src = "/assets/js/preloader.js";
     script.defer = true;
@@ -421,22 +401,16 @@ function createPreloaderLoader() {
 
 function createModelPreloaderLoader() {
   let loaded = false;
-
   return function ensureModelPreloader() {
     if (loaded) return;
     const hasViewer = !!document.querySelector('model-viewer');
     if (!hasViewer) return;
-
     const existing = document.querySelector('script[data-model-preloader]');
-    if (existing) {
-      loaded = true;
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = '/assets/js/model-preloader.js';
+    if (existing) { loaded = true; return; }
+    const script = document.createElement("script");
+    script.src = "/assets/js/model-preloader.js";
     script.defer = true;
-    script.dataset.modelPreloader = 'true';
+    script.dataset.modelPreloader = "true";
     document.head.appendChild(script);
     loaded = true;
   };
@@ -444,13 +418,10 @@ function createModelPreloaderLoader() {
 
 function createModelNavLoader() {
   let loaded = false;
-
   return function ensureModelNavLoader() {
     if (loaded) return;
-
     const existing = document.querySelector('script[data-model-nav-loader]');
     if (existing) { loaded = true; return; }
-
     const script = document.createElement('script');
     script.src = '/assets/js/model-nav-loader.js';
     script.defer = true;
@@ -460,31 +431,21 @@ function createModelNavLoader() {
   };
 }
 
-
 // ================= NAV =================
 function markActiveNav() {
   const path = normalizePath(window.location.pathname || "/");
   const navLinks = document.querySelectorAll(".main-nav a");
   let matched = false;
-
   navLinks.forEach((a) => {
     const href = a.getAttribute("href");
     if (!href) return;
-
     try {
       const linkPath = normalizePath(new URL(href, window.location.origin).pathname);
-      if (linkPath === path) {
-        a.classList.add("active");
-        matched = true;
-      }
+      if (linkPath === path) { a.classList.add("active"); matched = true; }
     } catch (e) {
-      if (href && path.endsWith(href)) {
-        a.classList.add("active");
-        matched = true;
-      }
+      if (href && path.endsWith(href)) { a.classList.add("active"); matched = true; }
     }
   });
-
   if (!matched) {
     navLinks.forEach((a) => {
       const text = (a.textContent || "").trim().toUpperCase();
@@ -504,18 +465,14 @@ function setupLangSwitch() {
   const path = window.location.pathname || "/";
   const isEn = path.startsWith("/eng/");
   const currentLang = isEn ? "en" : "tr";
-
   const container = document.querySelector(".top-lang-switch");
   if (!container) return;
-
   container.querySelectorAll("[data-lang]").forEach((btn) => {
     const lang = btn.getAttribute("data-lang");
     btn.classList.toggle("active", lang === currentLang);
-
     btn.addEventListener("click", (e) => {
       e.preventDefault();
       if (lang === currentLang) return;
-
       const targetPath = lang === "en" ? toEnPath(path) : toTrPath(path);
       window.location.href = targetPath;
     });
@@ -538,30 +495,19 @@ function toTrPath(path) {
 // ================= FOOTER ENHANCER =================
 function enhanceFooter(root) {
   injectFooterStyles();
-
   const footer = root.querySelector("footer");
   if (!footer || footer.classList.contains("alba-footer-v5")) return;
   footer.classList.add("alba-footer-v5");
 
-  const allowCallSquare = /\/hizmetler(\.html)?\/?$/i.test(
-    window.location.pathname || ""
-  );
+  const allowCallSquare = /\/hizmetler(\.html)?\/?$/i.test(window.location.pathname || "");
   if (!allowCallSquare) {
     footer.querySelectorAll(".alba-call-square").forEach((el) => el.remove());
   }
 
-  const socials =
-    footer.querySelector(".social-icons") ||
-    footer.querySelector(".footer-socials") ||
-    footer.querySelector("[data-socials]");
+  const socials = footer.querySelector(".social-icons") || footer.querySelector(".footer-socials") || footer.querySelector("[data-socials]");
   if (socials) socials.classList.add("alba-footer-socials");
 
-  const addressContainer =
-    footer.querySelector(".footer-right") ||
-    footer.querySelector(".footer-address") ||
-    footer.querySelector(".footer-contact") ||
-    footer.querySelector("[data-footer-address]");
-
+  const addressContainer = footer.querySelector(".footer-right") || footer.querySelector(".footer-address") || footer.querySelector(".footer-contact") || footer.querySelector("[data-footer-address]");
   if (!addressContainer) return;
 
   const rawAddrText = (addressContainer.innerText || "").trim();
@@ -569,9 +515,6 @@ function enhanceFooter(root) {
 
   const merkezBlock = extractSection(rawAddrText, /Merkez Ofis/i, /Adana Şube/i);
   const adanaBlock = extractSection(rawAddrText, /Adana Şube/i, null);
-
-  const phoneRaw = findPhone(rawAddrText) || findPhone(footer.innerText || "");
-  const phoneTel = phoneRaw ? phoneRaw.replace(/[^\d+]/g, "") : "";
 
   const mailAnchors = footer.querySelectorAll('a[href^="mailto:"]');
   mailAnchors.forEach((el) => el.remove());
@@ -620,10 +563,7 @@ function enhanceFooter(root) {
 
 function buildMapButton(blockText) {
   if (!blockText) return null;
-  const lines = blockText
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const lines = blockText.split('\n').map((s) => s.trim()).filter(Boolean);
   if (!lines.length) return null;
   const title = lines[0];
   const addressLines = lines.slice(1).filter((l) => !/(\+?\s*\d[\d\s()\-]{7,}\d)/.test(l));
@@ -631,8 +571,7 @@ function buildMapButton(blockText) {
   if (!address) return null;
   const a = document.createElement('a');
   a.className = 'alba-footer-action';
-  a.href =
-    'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address);
+  a.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address);
   a.target = '_blank';
   a.rel = 'noopener';
   const hintTr = 'Haritayı açmak için dokunun';
@@ -651,13 +590,10 @@ function extractSection(text, startRegex, beforeRegex) {
   if (!text) return "";
   const start = text.search(startRegex);
   if (start === -1) return "";
-
   const sliced = text.slice(start);
   if (!beforeRegex) return sliced.trim();
-
   const end = sliced.search(beforeRegex);
   if (end === -1) return sliced.trim();
-
   return sliced.slice(0, end).trim();
 }
 
@@ -678,83 +614,20 @@ function escapeHtml(str) {
 
 function injectFooterStyles() {
   if (document.getElementById("alba-footer-style-v5")) return;
-
   const s = document.createElement("style");
   s.id = "alba-footer-style-v5";
   s.textContent = `
-    .alba-footer-contact-panel {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      margin-top: 20px;
-    }
-    .alba-footer-action {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 14px 20px;
-      border-radius: 16px;
-      background: rgba(15,23,42,0.55);
-      border: 1px solid rgba(148,163,184,0.28);
-      box-shadow: 0 14px 38px rgba(0,0,0,0.35);
-      -webkit-backdrop-filter: blur(10px);
-      backdrop-filter: blur(10px);
-      text-decoration: none;
-      width: 220px;
-      transition: transform .2s ease, box-shadow .25s ease, border-color .25s ease;
-    }
-    .alba-footer-action:hover {
-      transform: translateY(-2px);
-      border-color: rgba(56,189,248,0.7);
-      box-shadow: 0 18px 52px rgba(56,189,248,0.12), 0 14px 38px rgba(0,0,0,0.45);
-    }
-    .alba-footer-action .action-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-    .alba-footer-action .action-icon {
-      font-size: 18px;
-      color: #38bdf8;
-    }
-    .alba-footer-action .action-text {
-      font-weight: 900;
-      color: #a7f3d0;
-      font-size: 14px;
-      letter-spacing: .04em;
-    }
-    .alba-footer-action .action-hint {
-      font-size: 11px;
-      color: #cbd5f5;
-      opacity: .75;
-      line-height: 1;
-    }
-    .alba-footer-action .map-address {
-      color: #cbd5f5;
-      font-size: 12px;
-      line-height: 1.4;
-      opacity: 0.9;
-      text-align: center;
-      margin-bottom: 6px;
-    }
-    .alba-blink {
-      animation: alba-blink 1.5s ease-in-out infinite;
-    }
-    @keyframes alba-blink {
-      0%, 100% { opacity: 0.8; }
-      50%      { opacity: 0.3; }
-    }
-    @media (max-width: 768px) {
-      .alba-footer-contact-panel {
-        margin: 12px auto 0;
-      }
-    }
+    .alba-footer-contact-panel { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 20px; }
+    .alba-footer-action { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px 20px; border-radius: 16px; background: rgba(15,23,42,0.55); border: 1px solid rgba(148,163,184,0.28); box-shadow: 0 14px 38px rgba(0,0,0,0.35); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); text-decoration: none; width: 220px; transition: transform .2s ease, box-shadow .25s ease, border-color .25s ease; }
+    .alba-footer-action:hover { transform: translateY(-2px); border-color: rgba(56,189,248,0.7); box-shadow: 0 18px 52px rgba(56,189,248,0.12), 0 14px 38px rgba(0,0,0,0.45); }
+    .alba-footer-action .action-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .alba-footer-action .action-icon { font-size: 18px; color: #38bdf8; }
+    .alba-footer-action .action-text { font-weight: 900; color: #a7f3d0; font-size: 14px; letter-spacing: .04em; }
+    .alba-footer-action .action-hint { font-size: 11px; color: #cbd5f5; opacity: .75; line-height: 1; }
+    .alba-footer-action .map-address { color: #cbd5f5; font-size: 12px; line-height: 1.4; opacity: 0.9; text-align: center; margin-bottom: 6px; }
+    .alba-blink { animation: alba-blink 1.5s ease-in-out infinite; }
+    @keyframes alba-blink { 0%, 100% { opacity: 0.8; } 50% { opacity: 0.3; } }
+    @media (max-width: 768px) { .alba-footer-contact-panel { margin: 12px auto 0; } }
   `;
   document.head.appendChild(s);
 }
-
-
