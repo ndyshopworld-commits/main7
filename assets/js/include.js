@@ -98,14 +98,31 @@ runAfterDomReady(() => {
       const url = el.getAttribute("data-include") || el.getAttribute("data-include-html");
       if (!url) return;
 
-      fetch(url)
-        .then((res) => {
-          if (!res.ok) throw new Error("Failed to load " + url + " (" + res.status + ")");
-          return res.text();
-        })
-        .then((html) => {
-          el.innerHTML = html;
+      // robust include loader with fallback for absolute/relative paths
+      const tryPaths = [url];
+      if (url.startsWith("/")) {
+        tryPaths.push(url.slice(1)); // fallback to relative path when served from sub-folders/CDNs
+      }
 
+      const loadFragment = async () => {
+        let html = "";
+        let lastErr;
+        for (const path of tryPaths) {
+          try {
+            const res = await fetch(path, { cache: "no-cache" });
+            if (!res.ok) throw new Error("Failed " + res.status + " for " + path);
+            html = await res.text();
+            break;
+          } catch (e) {
+            lastErr = e;
+          }
+        }
+        if (!html) throw lastErr || new Error("Unknown include error for " + url);
+        el.innerHTML = html;
+      };
+
+      loadFragment()
+        .then(() => {
           if (url.includes("header-")) {
             markActiveNav();
             setupLangSwitch();
@@ -119,7 +136,7 @@ runAfterDomReady(() => {
             ensureModelPreloader();
           }
         })
-        .catch(console.error);
+        .catch((err) => console.error("[include.js] include failed", url, err));
     });
   }
 
@@ -129,6 +146,7 @@ runAfterDomReady(() => {
 
   // ===== GLOBAL AI WIDGET (Albamen / Albaman) =====
   injectAiWidget();
+  waitForFooterThenAttachAi();
 
   function injectAiWidget() {
     const path = window.location.pathname || '/';
@@ -276,6 +294,29 @@ runAfterDomReady(() => {
       statusText.textContent = strings.listening;
       inputField.focus();
     });
+  }
+
+  // Переместить AI виджет в футер, когда футер добавится позже (например, после загрузки include)
+  function waitForFooterThenAttachAi() {
+    const moveToFooter = () => {
+      const footer = document.querySelector('footer');
+      const floating = document.getElementById('ai-floating-global');
+      if (!footer || !floating) return false;
+
+      if (getComputedStyle(footer).position === 'static') {
+        footer.style.position = 'relative';
+      }
+      footer.appendChild(floating);
+      floating.classList.add('footer-docked');
+      return true;
+    };
+
+    if (moveToFooter()) return;
+
+    const observer = new MutationObserver(() => {
+      if (moveToFooter()) observer.disconnect();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 
 }); // END runAfterDomReady
@@ -756,5 +797,3 @@ function injectFooterStyles() {
   `;
   document.head.appendChild(s);
 }
-
-
