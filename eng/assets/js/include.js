@@ -120,68 +120,76 @@ runAfterDomReady(() => {
 
   ensureModelPreloader();
 
-  // ===== GLOBAL AI WIDGET (Albaman - English) =====
+// ... (Начало файла без изменений: runAfterDomReady, ensureFavicon, includes...)
+
+  // ===== GLOBAL AI WIDGET (Albamen / Albaman) =====
   injectAiWidget();
 
   function injectAiWidget() {
-    // English texts strictly
-    const strings = {
+    const path = window.location.pathname || '/';
+    const isEn = path.startsWith('/eng/');
+
+    // Тексты (локализация)
+    const strings = isEn ? {
       placeholder: 'Send a message...',
       listening: 'Listening...',
-      connect: 'Talk to interrupt',
-      initialStatus: 'How was this conversation?',
-      voiceNotSupported: 'Voice not supported on this device'
+      initialStatus: 'How can I help you today?', // Статус стал нейтральным
+      welcomeBack: 'Welcome back, ', // Приветствие для старых друзей
+      voiceNotSupported: 'Voice not supported'
+    } : {
+      placeholder: 'Bir mesaj yazın...',
+      listening: 'Dinliyorum...',
+      initialStatus: 'Bugün sana nasıl yardım edebilirim?',
+      welcomeBack: 'Tekrar hoş geldin, ',
+      voiceNotSupported: 'Ses desteği yok'
     };
 
     if (document.getElementById('ai-floating-global')) return;
 
-    // 1. Create Floating Buttons
+    // --- 1. ПРОВЕРКА ПАМЯТИ (COOKIES/LOCALSTORAGE) ---
+    // Пытаемся найти сохраненные данные
+    const storedName = localStorage.getItem('albamen_user_name');
+    const storedAge = localStorage.getItem('albamen_user_age');
+    
+    // Если имя есть, меняем начальный статус
+    if (storedName) {
+      strings.initialStatus = strings.welcomeBack + storedName + "! 🚀";
+    }
+
+    // --- HTML Structure ---
     const floating = document.createElement('div');
     floating.className = 'ai-floating';
     floating.id = 'ai-floating-global';
-
     const avatarSrc = '/assets/images/albamenai.jpg';
 
     floating.innerHTML = `
       <div class="ai-hero-avatar" id="ai-avatar-trigger">
-        <img src="${avatarSrc}" alt="Albaman AI">
+        <img src="${avatarSrc}" alt="Albamen AI">
       </div>
       <button class="ai-call-btn pulse" id="ai-call-trigger" aria-label="Call AI">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-        </svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
       </button>
     `;
 
-    // Dock to footer if exists
     const footerHost = document.querySelector('footer');
-    if (footerHost) {
-      if (getComputedStyle(footerHost).position === 'static') {
-        footerHost.style.position = 'relative';
-      }
-      floating.classList.add('footer-docked');
-      footerHost.appendChild(floating);
+    if (footerHost && getComputedStyle(footerHost).position !== 'fixed') {
+       if (getComputedStyle(footerHost).position === 'static') footerHost.style.position = 'relative';
+       floating.classList.add('footer-docked');
+       footerHost.appendChild(floating);
     } else {
-      document.body.appendChild(floating);
+       document.body.appendChild(floating);
     }
 
-    // 2. Create Panel (White Theme)
     const panel = document.createElement('div');
     panel.className = 'ai-panel-global';
     panel.innerHTML = `
       <div class="ai-panel-header">
         <button class="ai-close-icon" id="ai-close-btn">×</button>
       </div>
-      
       <div class="ai-panel-body">
         <div class="ai-messages-list" id="ai-messages-list"></div>
-
-        <div class="ai-chat-avatar-large">
-          <img src="${avatarSrc}" alt="Albaman">
-        </div>
-        
+        <div class="ai-chat-avatar-large"><img src="${avatarSrc}" alt="Albamen"></div>
         <div class="ai-status-text" id="ai-status-text">${strings.initialStatus}</div>
-
         <div class="ai-input-area">
           <button class="ai-action-btn ai-mic-btn-panel" id="ai-mic-btn">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
@@ -195,7 +203,6 @@ runAfterDomReady(() => {
     `;
     document.body.appendChild(panel);
 
-    // --- Logic ---
     const avatarTrigger = document.getElementById('ai-avatar-trigger');
     const callTrigger = document.getElementById('ai-call-trigger');
     const closeBtn = document.getElementById('ai-close-btn');
@@ -205,10 +212,7 @@ runAfterDomReady(() => {
     const msgList = document.getElementById('ai-messages-list');
     const statusText = document.getElementById('ai-status-text');
 
-    const openPanel = () => {
-      panel.classList.add('ai-open');
-    };
-
+    const openPanel = () => panel.classList.add('ai-open');
     const closePanel = () => {
       panel.classList.remove('ai-open');
       panel.classList.remove('chat-active');
@@ -219,39 +223,60 @@ runAfterDomReady(() => {
     callTrigger.addEventListener('click', openPanel);
     closeBtn.addEventListener('click', closePanel);
 
-    // === REAL AI REQUEST via Cloudflare ===
+    // === ОТПРАВКА СООБЩЕНИЯ С ПАМЯТЬЮ ===
     function sendMessage() {
       const txt = inputField.value.trim();
       if (!txt) return;
 
-      // Switch to active chat view
       panel.classList.add('chat-active');
-
-      // 1. Add User Message
       addMessage(txt, 'user');
       inputField.value = '';
 
-      // 2. Show loading "..."
       const loadingId = 'loading-' + Date.now();
       addMessage("...", 'bot', loadingId);
 
-      // 3. Send to Cloudflare
+      // Читаем актуальные данные из памяти перед отправкой
+      const currentName = localStorage.getItem('albamen_user_name');
+      const currentAge = localStorage.getItem('albamen_user_age');
+
       const workerUrl = 'https://divine-flower-a0ae.nncdecdgc.workers.dev';
 
       fetch(workerUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: txt })
+        body: JSON.stringify({ 
+          message: txt,
+          savedName: currentName, // Отправляем имя
+          savedAge: currentAge    // Отправляем возраст
+        })
       })
       .then(res => res.json())
       .then(data => {
-        // Remove loader
         const loader = document.getElementById(loadingId);
         if(loader) loader.remove();
 
-        // Show Reply
         if (data.reply) {
-          addMessage(data.reply, 'bot');
+          // --- ОБРАБОТКА КОМАНД СОХРАНЕНИЯ ---
+          let finalReply = data.reply;
+
+          // Ищем тег имени <SAVE_NAME:...>
+          const nameMatch = finalReply.match(/<SAVE_NAME:(.*?)>/);
+          if (nameMatch) {
+            const newName = nameMatch[1].trim();
+            localStorage.setItem('albamen_user_name', newName); // Сохраняем в браузер
+            finalReply = finalReply.replace(nameMatch[0], ''); // Удаляем тег из текста
+            console.log("Albamen remembered name:", newName);
+          }
+
+          // Ищем тег возраста <SAVE_AGE:...>
+          const ageMatch = finalReply.match(/<SAVE_AGE:(.*?)>/);
+          if (ageMatch) {
+            const newAge = ageMatch[1].trim();
+            localStorage.setItem('albamen_user_age', newAge); // Сохраняем в браузер
+            finalReply = finalReply.replace(ageMatch[0], ''); // Удаляем тег из текста
+          }
+
+          addMessage(finalReply.trim(), 'bot');
         } else {
           addMessage("Error: AI silent.", 'bot');
         }
@@ -260,7 +285,7 @@ runAfterDomReady(() => {
         console.error("AI Error:", err);
         const loader = document.getElementById(loadingId);
         if(loader) loader.remove();
-        addMessage("Connection error. Try again.", 'bot');
+        addMessage("Connection error.", 'bot');
       });
     }
 
@@ -278,15 +303,13 @@ runAfterDomReady(() => {
       if (e.key === 'Enter') sendMessage();
     });
 
-    // Mic placeholder
     micBtn.addEventListener('click', () => {
       panel.classList.add('chat-active');
       statusText.textContent = strings.listening;
       inputField.focus();
     });
   }
-
-}); // END runAfterDomReady
+// ... (Остальной код: HELPER FUNCTIONS и далее, без изменений)
 
 
 // ================= HELPER FUNCTIONS =================
