@@ -145,36 +145,31 @@ runAfterDomReady(() => {
     const path = window.location.pathname || '/';
     const isEn = path.startsWith('/eng/');
 
-    // Локализованные строки
+    // Тексты
     const strings = isEn ? {
-      placeholder      : 'Send a message...',
-      listening        : 'Listening...',
-      initialStatus    : 'How can I help you today?',
-      welcomeBack      : 'Welcome back, ',
+      placeholder: 'Send a message...',
+      listening: 'Listening...',
+      connect: 'Talk to interrupt',
+      initialStatus: 'How was this conversation?',
       voiceNotSupported: 'Voice not supported'
     } : {
-      placeholder      : 'Bir mesaj yazın...',
-      listening        : 'Dinliyorum...',
-      initialStatus    : 'Bugün sana nasıl yardım edebilirim?',
-      welcomeBack      : 'Tekrar hoş geldin, ',
+      placeholder: 'Bir mesaj yazın...',
+      listening: 'Dinliyorum...',
+      connect: 'Bağlanıyor...',
+      initialStatus: 'Merhaba, ben Albamen',
       voiceNotSupported: 'Ses desteği yok'
     };
 
     // Проверяем, не создан ли виджет ранее
     if (document.getElementById('ai-floating-global')) return;
 
-    // Попытка получить сохранённое имя/возраст (для приветствия)
-    const storedName = localStorage.getItem('albamen_user_name');
-    const storedAge  = localStorage.getItem('albamen_user_age');
-    if (storedName) {
-      strings.initialStatus = strings.welcomeBack + storedName + "! 🚀";
-    }
-
-    // Создаём блок с аватаром и кнопкой вызова
+    // 1. Создаем контейнер для кнопок (Картинка + Кнопка вызова)
     const floating = document.createElement('div');
     floating.className = 'ai-floating';
     floating.id = 'ai-floating-global';
     const avatarSrc = '/assets/images/albamenai.jpg';
+
+    // HTML для кнопок в футере
     floating.innerHTML = `
       <div class="ai-hero-avatar" id="ai-avatar-trigger">
         <img src="${avatarSrc}" alt="Albamen AI">
@@ -187,7 +182,7 @@ runAfterDomReady(() => {
     // Закрепляем плавающий блок в body, чтобы он всегда был на экране
     document.body.appendChild(floating);
 
-    // Создаём панель чата
+    // 2. Создаем Панель Чата (Белую)
     const panel = document.createElement('div');
     panel.className = 'ai-panel-global';
     panel.innerHTML = `
@@ -232,76 +227,31 @@ runAfterDomReady(() => {
       statusText.style.display = 'block';
     };
 
-    // Навешиваем обработчики
+    // Открытие по клику на аватар или кнопку звонка
     avatarTrigger.addEventListener('click', openPanel);
     callTrigger.addEventListener('click', openPanel);
     closeBtn.addEventListener('click', closePanel);
 
-    // === Отправка сообщения с обработкой тегов <SAVE_NAME:...> и <SAVE_AGE:...> ===
+    // Отправка сообщений
     function sendMessage() {
       const txt = inputField.value.trim();
       if (!txt) return;
+
+      // Переход в режим активного чата (скрывает большой аватар)
       panel.classList.add('chat-active');
       addMessage(txt, 'user');
       inputField.value = '';
-      const loadingId = 'loading-' + Date.now();
-      addMessage("...", 'bot', loadingId);
 
-      // Считываем актуальные сохранённые значения
-      const currentName = localStorage.getItem('albamen_user_name');
-      const currentAge  = localStorage.getItem('albamen_user_age');
-
-      const workerUrl = 'https://divine-flower-a0ae.nncdecdgc.workers.dev';
-      fetch(workerUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message  : txt,
-          savedName: currentName,
-          savedAge : currentAge
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        const loader = document.getElementById(loadingId);
-        if (loader) loader.remove();
-        if (data.reply) {
-          let finalReply = data.reply;
-
-          // Обработка тега <SAVE_NAME:...>
-          const nameMatch = finalReply.match(/<SAVE_NAME:(.*?)>/);
-          if (nameMatch) {
-            const newName = nameMatch[1].trim();
-            localStorage.setItem('albamen_user_name', newName);
-            finalReply = finalReply.replace(nameMatch[0], '');
-          }
-
-          // Обработка тега <SAVE_AGE:...>
-          const ageMatch = finalReply.match(/<SAVE_AGE:(.*?)>/);
-          if (ageMatch) {
-            const newAge = ageMatch[1].trim();
-            localStorage.setItem('albamen_user_age', newAge);
-            finalReply = finalReply.replace(ageMatch[0], '');
-          }
-          addMessage(finalReply.trim(), 'bot');
-        } else {
-          addMessage("Error: AI silent.", 'bot');
-        }
-      })
-      .catch(err => {
-        console.error("AI Error:", err);
-        const loader = document.getElementById(loadingId);
-        if (loader) loader.remove();
-        addMessage("Connection error.", 'bot');
-      });
+      // Имитация ответа
+      setTimeout(() => {
+        addMessage(isEn ? "I am Albamen, ready to help!" : "Ben Albamen, nasıl yardımcı olabilirim?", 'bot');
+      }, 1000);
     }
 
-    // Функция добавления сообщения в список
-    function addMessage(text, type, id = null) {
+    function addMessage(text, type) {
       const div = document.createElement('div');
       div.className = `ai-msg ${type}`;
       div.textContent = text;
-      if (id) div.id = id;
       msgList.appendChild(div);
       msgList.scrollTop = msgList.scrollHeight;
     }
@@ -311,6 +261,8 @@ runAfterDomReady(() => {
     inputField.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') sendMessage();
     });
+
+    // Простая логика микрофона (заглушка для UI)
     micBtn.addEventListener('click', () => {
       if (!recognition) {
         statusText.textContent = strings.voiceNotSupported;
@@ -855,3 +807,5 @@ function injectFooterStyles() {
   `;
   document.head.appendChild(s);
 }
+
+
