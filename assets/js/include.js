@@ -139,7 +139,7 @@ runAfterDomReady(() => {
 
   // ===== GLOBAL AI WIDGET (Albamen / Albaman) =====
   injectAiWidget();
-  waitForFooterThenAttachAi();
+  ensureAiWidgetPinned();
 
   function injectAiWidget() {
     const path = window.location.pathname || '/';
@@ -184,15 +184,8 @@ runAfterDomReady(() => {
       </button>
     `;
 
-    // Закрепляем плавающий блок либо у футера, либо в body
-    const footerHost = document.querySelector('footer');
-    if (footerHost && getComputedStyle(footerHost).position !== 'fixed') {
-       if (getComputedStyle(footerHost).position === 'static') footerHost.style.position = 'relative';
-       floating.classList.add('footer-docked');
-       footerHost.appendChild(floating);
-    } else {
-       document.body.appendChild(floating);
-    }
+    // Закрепляем плавающий блок в body, чтобы он всегда был на экране
+    document.body.appendChild(floating);
 
     // Создаём панель чата
     const panel = document.createElement('div');
@@ -227,6 +220,9 @@ runAfterDomReady(() => {
     const inputField     = document.getElementById('ai-input-field');
     const msgList        = document.getElementById('ai-messages-list');
     const statusText     = document.getElementById('ai-status-text');
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    const recognition = SpeechRec ? new SpeechRec() : null;
+    let isListening = false;
 
     // Функции открытия и закрытия панели
     const openPanel  = () => panel.classList.add('ai-open');
@@ -316,32 +312,67 @@ runAfterDomReady(() => {
       if (e.key === 'Enter') sendMessage();
     });
     micBtn.addEventListener('click', () => {
+      if (!recognition) {
+        statusText.textContent = strings.voiceNotSupported;
+        statusText.style.display = 'block';
+        return;
+      }
+
+      if (isListening) {
+        recognition.stop();
+        return;
+      }
+
       panel.classList.add('chat-active');
       statusText.textContent = strings.listening;
+      statusText.style.display = 'block';
       inputField.focus();
+      recognition.lang = isEn ? 'en-US' : 'tr-TR';
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      isListening = true;
+      recognition.start();
     });
+
+    if (recognition) {
+      recognition.addEventListener('result', (event) => {
+        const transcript = Array.from(event.results)
+          .map(res => res[0].transcript)
+          .join(' ')
+          .trim();
+        if (transcript) {
+          inputField.value = transcript;
+        }
+      });
+
+      recognition.addEventListener('end', () => {
+        isListening = false;
+        statusText.textContent = strings.initialStatus;
+      });
+
+      recognition.addEventListener('error', () => {
+        isListening = false;
+        statusText.textContent = strings.voiceNotSupported;
+      });
+    }
   }
 
-  // Переместить AI виджет в футер, когда футер добавится позже (например, после загрузки include)
-  function waitForFooterThenAttachAi() {
-    const moveToFooter = () => {
-      const footer = document.querySelector('footer');
-      const floating = document.getElementById('ai-floating-global');
-      if (!footer || !floating) return false;
+  // Убедиться, что виджет остаётся прикреплённым к экрану даже при подмене футера
+  function ensureAiWidgetPinned() {
+    const floating = document.getElementById('ai-floating-global');
+    if (!floating) return;
 
-      if (getComputedStyle(footer).position === 'static') {
-        footer.style.position = 'relative';
+    const keepInBody = () => {
+      if (floating.parentElement !== document.body) {
+        document.body.appendChild(floating);
       }
-      footer.appendChild(floating);
-      floating.classList.add('footer-docked');
-      return true;
+      floating.classList.remove('footer-docked');
     };
 
-    if (moveToFooter()) return;
+    keepInBody();
 
-    const observer = new MutationObserver(() => {
-      if (moveToFooter()) observer.disconnect();
-    });
+    // Следим за мутациями (footer может появиться позже), чтобы не сдвинуть кнопку вниз
+    const observer = new MutationObserver(() => keepInBody());
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
