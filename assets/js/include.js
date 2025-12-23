@@ -149,16 +149,27 @@ runAfterDomReady(() => {
     const strings = isEn ? {
       placeholder: 'Send a message...',
       listening: 'Listening...',
-      connect: 'Talk to interrupt',
-      initialStatus: 'How was this conversation?',
-      voiceNotSupported: 'Voice not supported'
+      connect: 'Connecting...',
+      initialStatus: 'How can I help you today?',
+      welcomeBack: 'Welcome back, ',
+      voiceNotSupported: 'Voice not supported',
+      connectionError: 'Connection error.'
     } : {
       placeholder: 'Bir mesaj yazın...',
       listening: 'Dinliyorum...',
       connect: 'Bağlanıyor...',
-      initialStatus: 'Merhaba, ben Albamen',
-      voiceNotSupported: 'Ses desteği yok'
+      initialStatus: 'Bugün sana nasıl yardım edebilirim?',
+      welcomeBack: 'Tekrar hoş geldin, ',
+      voiceNotSupported: 'Ses desteği yok',
+      connectionError: 'Bağlantı hatası.'
     };
+
+    // Память пользователя (локальное хранение)
+    const storedName = localStorage.getItem('albamen_user_name');
+    const storedAge = localStorage.getItem('albamen_user_age');
+    if (storedName) {
+      strings.initialStatus = strings.welcomeBack + storedName + '! 🚀';
+    }
 
     // Проверяем, не создан ли виджет ранее
     if (document.getElementById('ai-floating-global')) return;
@@ -242,16 +253,63 @@ runAfterDomReady(() => {
       addMessage(txt, 'user');
       inputField.value = '';
 
-      // Имитация ответа
-      setTimeout(() => {
-        addMessage(isEn ? "I am Albamen, ready to help!" : "Ben Albamen, nasıl yardımcı olabilirim?", 'bot');
-      }, 1000);
+      const loadingId = 'loading-' + Date.now();
+      addMessage('...', 'bot', loadingId);
+      statusText.textContent = strings.connect;
+      statusText.style.display = 'block';
+
+      const workerUrl = 'https://divine-flower-a0ae.nncdecdgc.workers.dev';
+
+      fetch(workerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: txt,
+          savedName: localStorage.getItem('albamen_user_name'),
+          savedAge: localStorage.getItem('albamen_user_age')
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const loader = document.getElementById(loadingId);
+        if (loader) loader.remove();
+
+        if (data.reply) {
+          let finalReply = data.reply;
+
+          const nameMatch = finalReply.match(/<SAVE_NAME:(.*?)>/);
+          if (nameMatch) {
+            const newName = nameMatch[1].trim();
+            localStorage.setItem('albamen_user_name', newName);
+            finalReply = finalReply.replace(nameMatch[0], '');
+            console.log("Albamen remembered name:", newName);
+          }
+
+          const ageMatch = finalReply.match(/<SAVE_AGE:(.*?)>/);
+          if (ageMatch) {
+            const newAge = ageMatch[1].trim();
+            localStorage.setItem('albamen_user_age', newAge);
+            finalReply = finalReply.replace(ageMatch[0], '');
+          }
+
+          addMessage(finalReply.trim(), 'bot');
+        } else {
+          addMessage(strings.connectionError, 'bot');
+        }
+      })
+      .catch(err => {
+        console.error("AI Error:", err);
+        const loader = document.getElementById(loadingId);
+        if (loader) loader.remove();
+        addMessage(strings.connectionError, 'bot');
+      });
     }
 
-    function addMessage(text, type) {
+    function addMessage(text, type, id = null) {
       const div = document.createElement('div');
       div.className = `ai-msg ${type}`;
       div.textContent = text;
+      if (id) div.id = id;
       msgList.appendChild(div);
       msgList.scrollTop = msgList.scrollHeight;
     }
@@ -807,5 +865,4 @@ function injectFooterStyles() {
   `;
   document.head.appendChild(s);
 }
-
 
