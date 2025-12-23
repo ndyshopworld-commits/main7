@@ -179,17 +179,8 @@ runAfterDomReady(() => {
       </button>
     `;
 
-    // Логика привязки к футеру
-    const footerHost = document.querySelector('footer');
-    if (footerHost) {
-      if (getComputedStyle(footerHost).position === 'static') {
-        footerHost.style.position = 'relative';
-      }
-      floating.classList.add('footer-docked');
-      footerHost.appendChild(floating);
-    } else {
-      document.body.appendChild(floating);
-    }
+    // Закрепляем плавающий блок в body, чтобы он всегда был на экране
+    document.body.appendChild(floating);
 
     // 2. Создаем Панель Чата (Белую)
     const panel = document.createElement('div');
@@ -215,20 +206,21 @@ runAfterDomReady(() => {
     `;
     document.body.appendChild(panel);
 
-    // --- Логика работы ---
-    const avatarTrigger = document.getElementById('ai-avatar-trigger');
-    const callTrigger = document.getElementById('ai-call-trigger');
-    const closeBtn = document.getElementById('ai-close-btn');
-    const sendBtn = document.getElementById('ai-send-btn');
-    const micBtn = document.getElementById('ai-mic-btn');
-    const inputField = document.getElementById('ai-input-field');
-    const msgList = document.getElementById('ai-messages-list');
-    const statusText = document.getElementById('ai-status-text');
+    // Получаем ссылки на элементы
+    const avatarTrigger  = document.getElementById('ai-avatar-trigger');
+    const callTrigger    = document.getElementById('ai-call-trigger');
+    const closeBtn       = document.getElementById('ai-close-btn');
+    const sendBtn        = document.getElementById('ai-send-btn');
+    const micBtn         = document.getElementById('ai-mic-btn');
+    const inputField     = document.getElementById('ai-input-field');
+    const msgList        = document.getElementById('ai-messages-list');
+    const statusText     = document.getElementById('ai-status-text');
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    const recognition = SpeechRec ? new SpeechRec() : null;
+    let isListening = false;
 
-    const openPanel = () => {
-      panel.classList.add('ai-open');
-    };
-
+    // Функции открытия и закрытия панели
+    const openPanel  = () => panel.classList.add('ai-open');
     const closePanel = () => {
       panel.classList.remove('ai-open');
       panel.classList.remove('chat-active');
@@ -272,10 +264,68 @@ runAfterDomReady(() => {
 
     // Простая логика микрофона (заглушка для UI)
     micBtn.addEventListener('click', () => {
+      if (!recognition) {
+        statusText.textContent = strings.voiceNotSupported;
+        statusText.style.display = 'block';
+        return;
+      }
+
+      if (isListening) {
+        recognition.stop();
+        return;
+      }
+
       panel.classList.add('chat-active');
       statusText.textContent = strings.listening;
+      statusText.style.display = 'block';
       inputField.focus();
+      recognition.lang = isEn ? 'en-US' : 'tr-TR';
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      isListening = true;
+      recognition.start();
     });
+
+    if (recognition) {
+      recognition.addEventListener('result', (event) => {
+        const transcript = Array.from(event.results)
+          .map(res => res[0].transcript)
+          .join(' ')
+          .trim();
+        if (transcript) {
+          inputField.value = transcript;
+        }
+      });
+
+      recognition.addEventListener('end', () => {
+        isListening = false;
+        statusText.textContent = strings.initialStatus;
+      });
+
+      recognition.addEventListener('error', () => {
+        isListening = false;
+        statusText.textContent = strings.voiceNotSupported;
+      });
+    }
+  }
+
+  // Убедиться, что виджет остаётся прикреплённым к экрану даже при подмене футера
+  function ensureAiWidgetPinned() {
+    const floating = document.getElementById('ai-floating-global');
+    if (!floating) return;
+
+    const keepInBody = () => {
+      if (floating.parentElement !== document.body) {
+        document.body.appendChild(floating);
+      }
+      floating.classList.remove('footer-docked');
+    };
+
+    keepInBody();
+
+    // Следим за мутациями (footer может появиться позже), чтобы не сдвинуть кнопку вниз
+    const observer = new MutationObserver(() => keepInBody());
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 
 }); // END runAfterDomReady
