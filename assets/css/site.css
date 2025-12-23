@@ -152,7 +152,8 @@ body{
    AI WIDGET (RE-DESIGNED)
    ========================= */
 
-.ai-floating {
+.ai-floating,
+.ai-floating.footer-docked {
   position: fixed;
   right: 20px;
   bottom: 20px;
@@ -163,17 +164,11 @@ body{
   gap: 10px; /* Расстояние между картинкой и кнопкой вызова */
 }
 
-/* Если виджет внутри футера */
-.ai-floating.footer-docked {
-  position: absolute;
-  right: 20px;
-  bottom: 20px;
-}
-
 /* 1. Картинка-аватар (Albamen) */
 .ai-hero-avatar {
-  width: 90px;
-  height: 90px;
+  width: 104px;
+  height: 104px;
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
   overflow: hidden;
   border: 3px solid rgba(56, 189, 248, 0.6); /* Легкая голубая обводка */
@@ -188,6 +183,9 @@ body{
   height: 100%;
   object-fit: cover;
   display: block;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: optimizeQuality;
+  transform: translateZ(0);
 }
 
 .ai-hero-avatar:hover {
@@ -300,8 +298,8 @@ body{
 
 /* Большой аватар в центре чата */
 .ai-chat-avatar-large {
-  width: 140px;
-  height: 140px;
+  width: 160px;
+  height: 160px;
   border-radius: 50%;
   overflow: hidden;
   margin-bottom: 20px;
@@ -311,6 +309,9 @@ body{
   width: 100%;
   height: 100%;
   object-fit: cover;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: optimizeQuality;
+  transform: translateZ(0);
 }
 
 .ai-status-text {

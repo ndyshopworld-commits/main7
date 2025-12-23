@@ -139,7 +139,7 @@ runAfterDomReady(() => {
 
   // ===== GLOBAL AI WIDGET (Albamen / Albaman) =====
   injectAiWidget();
-  waitForFooterThenAttachAi();
+  ensureAiWidgetPinned();
 
   function injectAiWidget() {
     const path = window.location.pathname || '/';
@@ -184,15 +184,8 @@ runAfterDomReady(() => {
       </button>
     `;
 
-    // Закрепляем плавающий блок либо у футера, либо в body
-    const footerHost = document.querySelector('footer');
-    if (footerHost && getComputedStyle(footerHost).position !== 'fixed') {
-       if (getComputedStyle(footerHost).position === 'static') footerHost.style.position = 'relative';
-       floating.classList.add('footer-docked');
-       footerHost.appendChild(floating);
-    } else {
-       document.body.appendChild(floating);
-    }
+    // Закрепляем плавающий блок в body, чтобы он всегда был на экране
+    document.body.appendChild(floating);
 
     // Создаём панель чата
     const panel = document.createElement('div');
@@ -322,26 +315,22 @@ runAfterDomReady(() => {
     });
   }
 
-  // Переместить AI виджет в футер, когда футер добавится позже (например, после загрузки include)
-  function waitForFooterThenAttachAi() {
-    const moveToFooter = () => {
-      const footer = document.querySelector('footer');
-      const floating = document.getElementById('ai-floating-global');
-      if (!footer || !floating) return false;
+  // Убедиться, что виджет остаётся прикреплённым к экрану даже при подмене футера
+  function ensureAiWidgetPinned() {
+    const floating = document.getElementById('ai-floating-global');
+    if (!floating) return;
 
-      if (getComputedStyle(footer).position === 'static') {
-        footer.style.position = 'relative';
+    const keepInBody = () => {
+      if (floating.parentElement !== document.body) {
+        document.body.appendChild(floating);
       }
-      footer.appendChild(floating);
-      floating.classList.add('footer-docked');
-      return true;
+      floating.classList.remove('footer-docked');
     };
 
-    if (moveToFooter()) return;
+    keepInBody();
 
-    const observer = new MutationObserver(() => {
-      if (moveToFooter()) observer.disconnect();
-    });
+    // Следим за мутациями (footer может появиться позже), чтобы не сдвинуть кнопку вниз
+    const observer = new MutationObserver(() => keepInBody());
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
