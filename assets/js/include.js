@@ -1,9 +1,5 @@
 // Unified include.js for AlbaSpace website (Turkish)
-//
-// This script dynamically loads header and footer fragments, highlights the
-// current navigation item, provides a language switcher, keeps model-viewer
-// available with a fallback, and enhances the footer with neatly styled address
-// buttons and a call shortcut.
+// [UPDATED] Voice Logic Fixed for Gemini 2.5 Live API
 
 runAfterDomReady(() => {
   // Ensure a valid favicon is present
@@ -180,7 +176,7 @@ runAfterDomReady(() => {
   // ===== GLOBAL AI WIDGET (Albamen / Albaman) =====
   injectAiWidget();
   ensureAiWidgetPinned();
-  injectVoiceWidget();
+  injectVoiceWidget(); // <--- FIXED LOGIC IS HERE
 
   function injectAiWidget() {
     const path = window.location.pathname || '/';
@@ -299,6 +295,7 @@ runAfterDomReady(() => {
       statusText.textContent = strings.connect;
       statusText.style.display = 'block';
 
+      // TEXT CHAT Worker
       const workerUrl = 'https://divine-flower-a0ae.nncdecdgc.workers.dev';
 
       fetch(workerUrl, {
@@ -427,6 +424,9 @@ runAfterDomReady(() => {
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
+  // =========================================================
+  // ================= VOICE WIDGET LOGIC ====================
+  // =========================================================
   function injectVoiceWidget() {
     const path = window.location.pathname || '/';
     const isEn = path.startsWith('/eng/');
@@ -731,12 +731,15 @@ runAfterDomReady(() => {
     const startBtn = document.getElementById('voice-auth-start');
     const avatarTrigger = document.getElementById('ai-avatar-trigger');
 
+    // Переменные для аудио
     let audioContext = null;
     let websocket    = null;
-    let processor    = null;
-    let inputSource  = null;
+    let inputProcessor = null;
     let isVoiceActive = false;
+    let audioQueue = [];
+    let isPlaying = false;
 
+    // ОБРАБОТЧИКИ СОБЫТИЙ
     voiceBtn.addEventListener('click', () => {
       voicePanel.classList.add('ai-open');
       if (!localStorage.getItem('albamen_user_name')) {
@@ -766,149 +769,222 @@ runAfterDomReady(() => {
     function showAuthModal() { authModal.classList.add('open'); }
     function hideAuthModal() { authModal.classList.remove('open'); }
 
-    function startVoiceChat() {
+    // --- ГЛАВНАЯ ФУНКЦИЯ ЗАПУСКА ГОЛОСОВОГО ЧАТА ---
+    async function startVoiceChat() {
       if (isVoiceActive) return;
+
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         status.textContent = t.error;
+        console.error("Audio API not supported");
         return;
       }
+
       status.textContent = t.connecting;
       wave.classList.remove('hidden');
       stopBtn.classList.remove('hidden');
 
       const savedName = localStorage.getItem('albamen_user_name') || '';
       const savedAge  = localStorage.getItem('albamen_user_age') || '';
+
+      // URL Воркера
       const wsUrl = 'wss://albamen-voice.nncdecdgc.workers.dev'
         + '?name=' + encodeURIComponent(savedName)
         + '&age=' + encodeURIComponent(savedAge);
 
-      audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
-      websocket = new WebSocket(wsUrl);
+      try {
+        websocket = new WebSocket(wsUrl);
 
-      websocket.onopen = async () => {
-        isVoiceActive = true;
-        status.textContent = t.listening;
-        await startMicrophone();
-      };
-      websocket.onclose = stopVoiceChat;
-      websocket.onerror = stopVoiceChat;
-      websocket.onmessage = (ev) => {
-        try {
-          const data = JSON.parse(ev.data);
-          if (data.serverContent && data.serverContent.modelTurn && data.serverContent.modelTurn.parts) {
-            for (const part of data.serverContent.modelTurn.parts) {
-              if (part.text) {
-                let reply = part.text;
-                // обрабатываем теги сохранения
-                const n1 = reply.match(/<SAVE_NAME:(.*?)>/i);
-                if (n1) {
-                  localStorage.setItem('albamen_user_name', n1[1].trim());
-                  reply = reply.replace(n1[0], '');
+        websocket.onopen = async () => {
+            console.log("WebSocket Connected");
+            isVoiceActive = true;
+            status.textContent = t.listening;
+            await startMicrophone();
+        };
+
+        websocket.onclose = () => {
+            console.log("WebSocket Closed");
+            stopVoiceChat();
+        };
+
+        websocket.onerror = (e) => {
+            console.error("WebSocket Error:", e);
+            status.textContent = t.error;
+            stopVoiceChat();
+        };
+
+        websocket.onmessage = async (ev) => {
+            const data = JSON.parse(ev.data);
+
+            // Обработка входящего аудио от Gemini 2.0
+            if (data.serverContent && data.serverContent.modelTurn && data.serverContent.modelTurn.parts) {
+                for (const part of data.serverContent.modelTurn.parts) {
+                    if (part.inlineData && part.inlineData.mimeType.startsWith('audio/pcm')) {
+                        queueAudio(part.inlineData.data);
+                    }
                 }
-                const n2 = reply.match(/<SAVENAME:(.*?)>/i);
-                if (n2) {
-                  localStorage.setItem('albamen_user_name', n2[1].trim());
-                  reply = reply.replace(n2[0], '');
-                }
-                const a1 = reply.match(/<SAVE_AGE:(.*?)>/i);
-                if (a1) {
-                  localStorage.setItem('albamen_user_age', a1[1].trim());
-                  reply = reply.replace(a1[0], '');
-                }
-                const a2 = reply.match(/<SAVEAGE:(.*?)>/i);
-                if (a2) {
-                  localStorage.setItem('albamen_user_age', a2[1].trim());
-                  reply = reply.replace(a2[0], '');
-                }
-                if (reply.trim()) addVoiceMessage(reply.trim());
-              }
-              if (part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.indexOf('audio/') === 0) {
-                playAudioChunk(part.inlineData.data);
-              }
             }
-          }
-        } catch (e) {
-          console.error(e);
-        }
-      };
+        };
+
+      } catch (err) {
+          console.error("Connection failed:", err);
+          stopVoiceChat();
+      }
     }
 
+    // --- ЗАПИСЬ МИКРОФОНА (16kHz PCM) ---
     async function startMicrophone() {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { channelCount: 1, sampleRate: 24000 }
-      });
-      inputSource = audioContext.createMediaStreamSource(stream);
-      processor = audioContext.createScriptProcessor(4096, 1, 1);
-      processor.onaudioprocess = (e) => {
-        if (!websocket || websocket.readyState !== WebSocket.OPEN) return;
-        const inputData = e.inputBuffer.getChannelData(0);
-        const pcm16 = new Int16Array(inputData.length);
-        for (let i = 0; i < inputData.length; i++) {
-          const s = Math.max(-1, Math.min(1, inputData[i]));
-          pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        try {
+            // Создаем AudioContext специально для записи с частотой 16000 (требование Gemini)
+            audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    channelCount: 1,
+                    sampleRate: 16000,
+                    echoCancellation: true,
+                    noiseSuppression: true
+                }
+            });
+
+            const source = audioContext.createMediaStreamSource(stream);
+            // ScriptProcessorNode (deprecated, но надежно работает для RAW PCM)
+            inputProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+
+            inputProcessor.onaudioprocess = (e) => {
+                if (!websocket || websocket.readyState !== WebSocket.OPEN) return;
+
+                const inputData = e.inputBuffer.getChannelData(0);
+                // Конвертация Float32 -> Int16 PCM
+                const pcm16 = floatTo16BitPCM(inputData);
+                const base64Audio = arrayBufferToBase64(pcm16.buffer);
+
+                // Отправка в формате Gemini Live API
+                const msg = {
+                    realtime_input: {
+                        media_chunks: [{
+                            mime_type: "audio/pcm",
+                            data: base64Audio
+                        }]
+                    }
+                };
+                websocket.send(JSON.stringify(msg));
+            };
+
+            source.connect(inputProcessor);
+            inputProcessor.connect(audioContext.destination);
+
+        } catch (e) {
+            console.error("Microphone Access Error:", e);
+            status.textContent = "Mic Error";
         }
-        const bytes = new Uint8Array(pcm16.buffer);
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) {
-          binary += String.fromCharCode(bytes[i]);
+    }
+
+    // --- ВОСПРОИЗВЕДЕНИЕ (24kHz PCM) ---
+    function queueAudio(base64Data) {
+        const audioData = base64ToArrayBuffer(base64Data);
+        // Gemini отдает 24kHz Int16. Нам нужно конвертировать это во Float32
+        const float32Data = pcm16ToFloat32(audioData);
+
+        audioQueue.push(float32Data);
+        if (!isPlaying) {
+            playNextChunk();
         }
-        const base64Audio = btoa(binary);
-        websocket.send(JSON.stringify({
-          realtime_input: { media_chunks: [{ mime_type: 'audio/pcm', data: base64Audio }] }
-        }));
-      };
-      inputSource.connect(processor);
-      processor.connect(audioContext.destination);
+    }
+
+    function playNextChunk() {
+        if (audioQueue.length === 0) {
+            isPlaying = false;
+            // Убираем свечение, если очередь пуста
+            const bigAvatar = voicePanel.querySelector('.ai-chat-avatar-large');
+            if (avatarTrigger) avatarTrigger.classList.remove('ai-glow');
+            if (bigAvatar) bigAvatar.classList.remove('ai-glow');
+            return;
+        }
+
+        isPlaying = true;
+        const chunk = audioQueue.shift();
+
+        // Если audioContext уже создан на 16000, это может вызвать проблемы с воспроизведением 24000.
+        // Для воспроизведения создадим отдельный буфер с rate 24000.
+        // AudioContext сам сделает ресемплинг при воспроизведении.
+        if (!audioContext) return;
+
+        const buffer = audioContext.createBuffer(1, chunk.length, 24000);
+        buffer.getChannelData(0).set(chunk);
+
+        const source = audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioContext.destination);
+
+        // Включаем визуальный эффект
+        const bigAvatar = voicePanel.querySelector('.ai-chat-avatar-large');
+        if (avatarTrigger) avatarTrigger.classList.add('ai-glow');
+        if (bigAvatar) bigAvatar.classList.add('ai-glow');
+
+        source.onended = playNextChunk;
+        source.start();
     }
 
     function stopVoiceChat() {
       if (!isVoiceActive && !audioContext && !websocket) return;
       isVoiceActive = false;
+      isPlaying = false;
+      audioQueue = [];
+
       try { if (websocket) websocket.close(); } catch (e) {}
-      try { if (processor) processor.disconnect(); } catch (e) {}
-      try { if (inputSource) inputSource.disconnect(); } catch (e) {}
+      try { if (inputProcessor) inputProcessor.disconnect(); } catch (e) {}
       try { if (audioContext) audioContext.close(); } catch (e) {}
+
+      audioContext = null;
+      websocket = null;
+      inputProcessor = null;
+
       wave.classList.add('hidden');
       stopBtn.classList.add('hidden');
       status.textContent = t.talkPrompt;
-    }
 
-    function addVoiceMessage(text) {
-      const div = document.createElement('div');
-      div.className = 'ai-msg bot';
-      div.textContent = text;
-      messages.appendChild(div);
-      messages.scrollTop = messages.scrollHeight;
-    }
-
-    function playAudioChunk(base64String) {
-      if (!audioContext) return;
-      const binaryString = atob(base64String);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      const int16Data = new Int16Array(bytes.buffer);
-      const float32Data = new Float32Array(int16Data.length);
-      for (let i = 0; i < int16Data.length; i++) {
-        float32Data[i] = int16Data[i] / 32768.0;
-      }
-      const buffer = audioContext.createBuffer(1, float32Data.length, 24000);
-      buffer.getChannelData(0).set(float32Data);
-      const source = audioContext.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioContext.destination);
-
-      // включаем свечение аватара на время воспроизведения
       const bigAvatar = voicePanel.querySelector('.ai-chat-avatar-large');
-      if (avatarTrigger) avatarTrigger.classList.add('ai-glow');
-      if (bigAvatar) bigAvatar.classList.add('ai-glow');
+      if (avatarTrigger) avatarTrigger.classList.remove('ai-glow');
+      if (bigAvatar) bigAvatar.classList.remove('ai-glow');
+    }
 
-      source.onended = () => {
-        if (avatarTrigger) avatarTrigger.classList.remove('ai-glow');
-        if (bigAvatar) bigAvatar.classList.remove('ai-glow');
-      };
-      source.start(0);
+    // --- CONVERTERS ---
+    function floatTo16BitPCM(input) {
+        const output = new Int16Array(input.length);
+        for (let i = 0; i < input.length; i++) {
+            const s = Math.max(-1, Math.min(1, input[i]));
+            output[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+        return output;
+    }
+
+    function pcm16ToFloat32(buffer) {
+        const int16 = new Int16Array(buffer);
+        const float32 = new Float32Array(int16.length);
+        for (let i = 0; i < int16.length; i++) {
+            float32[i] = int16[i] / 32768.0;
+        }
+        return float32;
+    }
+
+    function arrayBufferToBase64(buffer) {
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return window.btoa(binary);
+    }
+
+    function base64ToArrayBuffer(base64) {
+        const binaryString = window.atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
     }
   }
 }); // END runAfterDomReady
@@ -1303,11 +1379,11 @@ function findPhone(text) {
 
 function escapeHtml(str) {
   return String(str || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll("&", "&")
+    .replaceAll("<", "<")
+    .replaceAll(">", ">")
+    .replaceAll('"', """)
+    .replaceAll("'", "'");
 }
 
 function injectFooterStyles() {
