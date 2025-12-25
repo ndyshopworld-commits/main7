@@ -684,15 +684,6 @@ footer.footer{
   color:#e5e7eb;
 }
 
-/* НОВОЕ: выравниваем копирайт по центру на всех языках */
-.footer-bottom{
-  text-align:center;
-  padding:16px 0;
-}
-.footer-bottom p{
-  margin:0;
-}
-
 /* соцсети в футере (PNG) */
 .footer-social{
   display:flex;
@@ -1170,7 +1161,7 @@ footer.footer{
   border-radius: var(--glass-radius);
 
   -webkit-backdrop-filter: blur(14px);
-  backdrop-filter:blur(14px);
+  backdrop-filter: blur(14px);
 
   box-shadow:
     0 0 28px var(--glass-glow),
