@@ -684,7 +684,7 @@ footer.footer{
   color:#e5e7eb;
 }
 
-/* НОВОЕ: центрируем копирайт внизу футера */
+/* НОВОЕ: выравниваем копирайт по центру на всех языках */
 .footer-bottom{
   text-align:center;
   padding:16px 0;
@@ -1161,7 +1161,7 @@ footer.footer{
 /* Универсальный класс: можно навешивать на любые блоки */
 .glass-container,
 .model-container,
-model-viewer-wrapper,
+.model-viewer-wrapper,
 .page-wrapper,
 .hero,
 .card-container{
@@ -1331,7 +1331,7 @@ model-viewer{
 .viewer-wrapper .loading-text{ font-size:15px; line-height:1.4; margin-bottom:14px; color:#e5e7eb; opacity:0.92; }
 .viewer-wrapper .loading-subtext{ font-size:12px; color:#9ca3af; margin-bottom:16px; }
 .viewer-wrapper .progress-shell{ position:relative; width:100%; }
-.viewer-wrapper .progress-bar{ width:100%; height:8px; background:radial-gradient(circle at top, #020617, #020617); border-radius:999px; overflow:hidden; border:1px солid rgba(148,163,184,0.5); }
+.viewer-wrapper .progress-bar{ width:100%; height:8px; background:radial-gradient(circle at top, #020617, #020617); border-radius:999px; overflow:hidden; border:1px solid rgba(148,163,184,0.5); }
 .viewer-wrapper .progress-fill{ width:0%; height:100%; background:linear-gradient(90deg, rgba(56,189,248,1), rgba(59,130,246,1), rgba(37,99,235,0.8)); box-shadow:0 0 16px rgba(56,189,248,0.9), 0 0 30px rgba(56,189,248,0.8); border-radius:inherit; transition:width 0.25s ease-out; }
 .viewer-wrapper .progress-glow{ position:absolute; inset:0; border-radius:999px; pointer-events:none; background:radial-gradient(circle at center, rgba(56,189,248,0.35), transparent 60%); opacity:0.0; animation:progressGlow 1.8s ease-in-out infinite; }
 .viewer-wrapper .overlay-hint{ margin-top:8px; font-size:11px; color:#9ca3af; letter-spacing:0.08em; text-transform:uppercase; }
