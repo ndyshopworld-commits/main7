@@ -1,12 +1,11 @@
 // Unified include.js for AlbaSpace website (Turkish)
-//
-// This script dynamically loads header and footer fragments, highlights the
-// current navigation item, provides a language switcher, keeps model-viewer
-// available with a fallback, and enhances the footer with neatly styled address
-// buttons and a call shortcut.
+// Includes: Dynamic Header/Footer, AI Widget (Text+Voice), Analytics (GA4 + Yandex)
 
 runAfterDomReady(() => {
-  // Ensure a valid favicon is present
+  // 1. ЗАПУСК АНАЛИТИКИ (В первую очередь)
+  injectAnalytics();
+
+  // 2. Favicon
   (function ensureFavicon() {
     try {
       const existing = document.querySelector('link[rel~="icon"]');
@@ -26,16 +25,16 @@ runAfterDomReady(() => {
     }
   })();
 
-  // Загружаем CSS и скрипт для model-viewer без проверки includes
+  // 3. Загружаем CSS и скрипт для model-viewer
   injectModelViewerStyles();
   ensureModelViewerLoaded();
 
-  // Создаём лоадеры для прелоадера и навигации 3D моделей
+  // 4. Создаём лоадеры
   const ensurePreloaderScript  = createPreloaderLoader();
-  const ensureModelPreloader  = createModelPreloaderLoader();
-  const ensureModelNavLoader  = createModelNavLoader();
+  const ensureModelPreloader   = createModelPreloaderLoader();
+  const ensureModelNavLoader   = createModelNavLoader();
 
-  // ---------------- Mobile nav override ----------------
+  // 5. Mobile nav override
   if (!document.getElementById("albaspace-nav-override-style")) {
     const navStyle = document.createElement("style");
     navStyle.id = "albaspace-nav-override-style";
@@ -84,18 +83,16 @@ runAfterDomReady(() => {
     document.head.appendChild(navStyle);
   }
 
-  // ---------------- Load includes ----------------
-  // Поддерживаем атрибуты data-include и data-include-html
+  // 6. Load includes (Header / Footer)
   const includes = document.querySelectorAll("[data-include], [data-include-html]");
   if (includes.length) {
     includes.forEach((el) => {
       const url = el.getAttribute("data-include") || el.getAttribute("data-include-html");
       if (!url) return;
 
-      // robust include loader with fallback for absolute/relative paths
       const tryPaths = [url];
       if (url.startsWith("/")) {
-        tryPaths.push(url.slice(1)); // fallback to relative path when served from sub-folders/CDNs
+        tryPaths.push(url.slice(1));
       }
 
       const loadFragment = async () => {
@@ -112,13 +109,37 @@ runAfterDomReady(() => {
           }
         }
         if (!html) throw lastErr || new Error("Unknown include error for " + url);
-        el.innerHTML = html;
+
+        // Вставка HTML и выполнение скриптов
+        const tmp = document.createElement("div");
+        tmp.innerHTML = html;
+        const scripts = Array.from(tmp.querySelectorAll("script"));
+        scripts.forEach((s) => {
+          if (s.parentNode) s.parentNode.removeChild(s);
+        });
+        el.innerHTML = tmp.innerHTML;
+
+        scripts.forEach((oldScript) => {
+          const newScript = document.createElement("script");
+          Array.from(oldScript.attributes || []).forEach(({ name, value }) => {
+            if (name === "src") {
+              newScript.src = value;
+            } else {
+              newScript.setAttribute(name, value);
+            }
+          });
+          if (!oldScript.src) {
+            newScript.textContent = oldScript.textContent || "";
+          }
+          if (oldScript.async) newScript.async = true;
+          if (oldScript.defer) newScript.defer = true;
+          (document.head || document.documentElement).appendChild(newScript);
+        });
       };
 
       loadFragment()
         .then(() => {
           if (url.includes("header-")) {
-            // выполняем навигацию, переключатель языка и лоадеры
             markActiveNav();
             setupLangSwitch();
             ensurePreloaderScript();
@@ -133,15 +154,15 @@ runAfterDomReady(() => {
         .catch((err) => console.error("[include.js] include failed", url, err));
     });
   } else {
-    // если includes нет, всё равно загружаем базовый прелоадер для model-viewer
     ensureModelPreloader();
   }
 
-  // ===== GLOBAL AI WIDGET (Albamen / Albaman) =====
+  // 7. GLOBAL AI WIDGET (Albamen / Albaman)
   injectAiWidget();
   ensureAiWidgetPinned();
   injectVoiceWidget();
 
+  // --- AI WIDGET LOGIC ---
   function injectAiWidget() {
     const path = window.location.pathname || '/';
     const isEn = path.startsWith('/eng/');
@@ -165,23 +186,20 @@ runAfterDomReady(() => {
       connectionError: 'Bağlantı hatası.'
     };
 
-    // Память пользователя (локальное хранение)
+    // Память пользователя
     const storedName = localStorage.getItem('albamen_user_name');
-    const storedAge = localStorage.getItem('albamen_user_age');
     if (storedName) {
       strings.initialStatus = strings.welcomeBack + storedName + '! 🚀';
     }
 
-    // Проверяем, не создан ли виджет ранее
     if (document.getElementById('ai-floating-global')) return;
 
-    // 1. Создаем контейнер для кнопок (Картинка + Кнопка вызова)
+    // Плавающая кнопка
     const floating = document.createElement('div');
     floating.className = 'ai-floating';
     floating.id = 'ai-floating-global';
     const avatarSrc = '/assets/images/albamenai.jpg';
 
-    // HTML для кнопок в футере
     floating.innerHTML = `
       <div class="ai-hero-avatar" id="ai-avatar-trigger">
         <img src="${avatarSrc}" alt="Albamen AI">
@@ -190,11 +208,9 @@ runAfterDomReady(() => {
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
       </button>
     `;
-
-    // Закрепляем плавающий блок в body, чтобы он всегда был на экране
     document.body.appendChild(floating);
 
-    // 2. Создаем Панель Чата (Белую)
+    // Панель чата
     const panel = document.createElement('div');
     panel.className = 'ai-panel-global';
     panel.innerHTML = `
@@ -211,14 +227,13 @@ runAfterDomReady(() => {
           </button>
           <input type="text" class="ai-input" id="ai-input-field" placeholder="${strings.placeholder}">
           <button class="ai-action-btn ai-send-btn-panel" id="ai-send-btn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
           </button>
         </div>
       </div>
     `;
     document.body.appendChild(panel);
 
-    // Получаем ссылки на элементы
     const avatarTrigger  = document.getElementById('ai-avatar-trigger');
     const callTrigger    = document.getElementById('ai-call-trigger');
     const closeBtn       = document.getElementById('ai-close-btn');
@@ -231,7 +246,6 @@ runAfterDomReady(() => {
     const recognition = SpeechRec ? new SpeechRec() : null;
     let isListening = false;
 
-    // Функции открытия и закрытия панели
     const openPanel  = () => panel.classList.add('ai-open');
     const closePanel = () => {
       panel.classList.remove('ai-open');
@@ -239,17 +253,14 @@ runAfterDomReady(() => {
       statusText.style.display = 'block';
     };
 
-    // Открытие по клику на аватар или кнопку звонка
     avatarTrigger.addEventListener('click', openPanel);
     callTrigger.addEventListener('click', openPanel);
     closeBtn.addEventListener('click', closePanel);
 
-    // Отправка сообщений
     function sendMessage() {
       const txt = inputField.value.trim();
       if (!txt) return;
 
-      // Переход в режим активного чата (скрывает большой аватар)
       panel.classList.add('chat-active');
       addMessage(txt, 'user');
       inputField.value = '';
@@ -277,22 +288,18 @@ runAfterDomReady(() => {
 
         if (data.reply) {
           let finalReply = data.reply;
-
           const nameMatch = finalReply.match(/<SAVE_NAME:(.*?)>/);
           if (nameMatch) {
             const newName = nameMatch[1].trim();
             localStorage.setItem('albamen_user_name', newName);
             finalReply = finalReply.replace(nameMatch[0], '');
-            console.log("Albamen remembered name:", newName);
           }
-
           const ageMatch = finalReply.match(/<SAVE_AGE:(.*?)>/);
           if (ageMatch) {
             const newAge = ageMatch[1].trim();
             localStorage.setItem('albamen_user_age', newAge);
             finalReply = finalReply.replace(ageMatch[0], '');
           }
-
           addMessage(finalReply.trim(), 'bot');
         } else {
           addMessage(strings.connectionError, 'bot');
@@ -315,25 +322,21 @@ runAfterDomReady(() => {
       msgList.scrollTop = msgList.scrollHeight;
     }
 
-    // Обработчики ввода
     sendBtn.addEventListener('click', sendMessage);
     inputField.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') sendMessage();
     });
 
-    // Простая логика микрофона (заглушка для UI)
     micBtn.addEventListener('click', () => {
       if (!recognition) {
         statusText.textContent = strings.voiceNotSupported;
         statusText.style.display = 'block';
         return;
       }
-
       if (isListening) {
         recognition.stop();
         return;
       }
-
       panel.classList.add('chat-active');
       statusText.textContent = strings.listening;
       statusText.style.display = 'block';
@@ -355,12 +358,10 @@ runAfterDomReady(() => {
           inputField.value = transcript;
         }
       });
-
       recognition.addEventListener('end', () => {
         isListening = false;
         statusText.textContent = strings.initialStatus;
       });
-
       recognition.addEventListener('error', () => {
         isListening = false;
         statusText.textContent = strings.voiceNotSupported;
@@ -368,21 +369,16 @@ runAfterDomReady(() => {
     }
   }
 
-  // Убедиться, что виджет остаётся прикреплённым к экрану даже при подмене футера
   function ensureAiWidgetPinned() {
     const floating = document.getElementById('ai-floating-global');
     if (!floating) return;
-
     const keepInBody = () => {
       if (floating.parentElement !== document.body) {
         document.body.appendChild(floating);
       }
       floating.classList.remove('footer-docked');
     };
-
     keepInBody();
-
-    // Следим за мутациями (footer может появиться позже), чтобы не сдвинуть кнопку вниз
     const observer = new MutationObserver(() => keepInBody());
     observer.observe(document.body, { childList: true, subtree: true });
   }
@@ -390,8 +386,6 @@ runAfterDomReady(() => {
   function injectVoiceWidget() {
     const path = window.location.pathname || '/';
     const isEn = path.startsWith('/eng/');
-
-    // локализованные строки
     const t = isEn ? {
       btnAria: 'Voice chat',
       talkPrompt: 'Tap and Talk 🔊',
@@ -420,216 +414,49 @@ runAfterDomReady(() => {
       error: 'Ses desteği yok'
     };
 
-    // стили для голосового окна + свечения, если еще не добавлены
     if (!document.getElementById('ai-voice-style')) {
       const style = document.createElement('style');
       style.id = 'ai-voice-style';
       style.textContent = `
-        .ai-voice-btn {
-          width: 52px;
-          height: 52px;
-          border-radius: 999px;
-          background: #020617;
-          border: 2px solid rgba(148, 163, 184, 0.6);
-          color: #e5e7eb;
-          display: grid;
-          place-items: center;
-          cursor: pointer;
-          box-shadow: 0 14px 35px rgba(15, 23, 42, 0.75);
-          transition: transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
-        }
-        .ai-voice-btn:hover {
-          transform: translateY(-1px) scale(1.05);
-          background: radial-gradient(circle at 30% 0%, #0ea5e9, #020617 60%);
-          border-color: rgba(56, 189, 248, 0.9);
-          box-shadow: 0 20px 40px rgba(8, 47, 73, 0.9);
-        }
-        .ai-panel-voice {
-          position: fixed;
-          right: 20px;
-          bottom: 20px;
-          width: 340px;
-          max-width: 95vw;
-          height: 360px;
-          background: #020617;
-          color: #e5e7eb;
-          border-radius: 24px;
-          box-shadow: 0 22px 55px rgba(15, 23, 42, 0.85);
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          transform: translateY(18px) scale(0.96);
-          opacity: 0;
-          pointer-events: none;
-          transition: transform .26s cubic-bezier(.16,1,.3,1), opacity .26s ease;
-          z-index: 1205;
-        }
-        .ai-panel-voice.ai-open {
-          transform: translateY(0) scale(1);
-          opacity: 1;
-          pointer-events: auto;
-        }
-        .ai-panel-voice .ai-panel-body {
-          padding: 12px 14px 14px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          height: 100%;
-        }
-        .ai-panel-voice .ai-messages-list {
-          flex: 1;
-          overflow-y: auto;
-          font-size: 13px;
-        }
-        .ai-panel-voice .ai-status-text {
-          font-size: 12px;
-          color: #9ca3af;
-          text-align: center;
-          min-height: 18px;
-        }
-        .ai-panel-voice .ai-chat-avatar-large {
-          margin: 0 auto 4px;
-        }
-        .voice-controls {
-          margin-top: auto;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 12px;
-        }
-        .voice-wave {
-          display: flex;
-          gap: 4px;
-          align-items: flex-end;
-        }
-        .voice-wave.hidden {
-          display: none !important;
-        }
-        .voice-bar {
-          width: 4px;
-          border-radius: 999px;
-          background: #22c55e;
-          animation: voiceWave 1.2s ease-in-out infinite;
-        }
+        .ai-voice-btn { width: 52px; height: 52px; border-radius: 999px; background: #020617; border: 2px solid rgba(148, 163, 184, 0.6); color: #e5e7eb; display: grid; place-items: center; cursor: pointer; box-shadow: 0 14px 35px rgba(15, 23, 42, 0.75); transition: transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease; }
+        .ai-voice-btn:hover { transform: translateY(-1px) scale(1.05); background: radial-gradient(circle at 30% 0%, #0ea5e9, #020617 60%); border-color: rgba(56, 189, 248, 0.9); box-shadow: 0 20px 40px rgba(8, 47, 73, 0.9); }
+        .ai-panel-voice { position: fixed; right: 20px; bottom: 20px; width: 340px; max-width: 95vw; height: 360px; background: #020617; color: #e5e7eb; border-radius: 24px; box-shadow: 0 22px 55px rgba(15, 23, 42, 0.85); display: flex; flex-direction: column; overflow: hidden; transform: translateY(18px) scale(0.96); opacity: 0; pointer-events: none; transition: transform .26s cubic-bezier(.16,1,.3,1), opacity .26s ease; z-index: 1205; }
+        .ai-panel-voice.ai-open { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
+        .ai-panel-voice .ai-panel-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; height: 100%; }
+        .ai-panel-voice .ai-messages-list { flex: 1; overflow-y: auto; font-size: 13px; }
+        .ai-panel-voice .ai-status-text { font-size: 12px; color: #9ca3af; text-align: center; min-height: 18px; }
+        .ai-panel-voice .ai-chat-avatar-large { margin: 0 auto 4px; }
+        .voice-controls { margin-top: auto; display: flex; align-items: center; justify-content: center; gap: 12px; }
+        .voice-wave { display: flex; gap: 4px; align-items: flex-end; }
+        .voice-wave.hidden { display: none !important; }
+        .voice-bar { width: 4px; border-radius: 999px; background: #22c55e; animation: voiceWave 1.2s ease-in-out infinite; }
         .voice-bar:nth-child(2) { animation-delay: .12s; }
         .voice-bar:nth-child(3) { animation-delay: .24s; }
-        @keyframes voiceWave {
-          0%,100% { height: 6px; }
-          50%     { height: 20px; }
-        }
-        .voice-stop-btn {
-          width: 34px;
-          height: 34px;
-          border-radius: 999px;
-          border: none;
-          cursor: pointer;
-          display: grid;
-          place-items: center;
-          background: #ef4444;
-          color: #fee2e2;
-          box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-          animation: pulseStop 1.4s infinite;
-        }
-        .voice-stop-btn.hidden {
-          display: none !important;
-        }
-        @keyframes pulseStop {
-          0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
-          70% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
-        .voice-auth-modal {
-          position: fixed;
-          inset: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: rgba(15, 23, 42, 0.82);
-          backdrop-filter: blur(6px);
-          z-index: 1300;
-          opacity: 0;
-          pointer-events: none;
-          transition: opacity .22s ease;
-        }
-        .voice-auth-modal.open {
-          opacity: 1;
-          pointer-events: auto;
-        }
-        .voice-auth-card {
-          width: 90%;
-          max-width: 320px;
-          background: radial-gradient(circle at top, #0f172a, #020617 70%);
-          border-radius: 22px;
-          padding: 18px 18px 16px;
-          box-shadow: 0 22px 45px rgba(15, 23, 42, 0.9);
-          color: #e5e7eb;
-          text-align: center;
-          border: 1px solid rgba(148, 163, 184, 0.5);
-        }
-        .voice-auth-card h3 {
-          font-size: 18px;
-          margin-bottom: 4px;
-        }
-        .voice-auth-card p {
-          font-size: 13px;
-          color: #9ca3af;
-          margin-bottom: 10px;
-        }
-        .voice-auth-card input {
-          width: 100%;
-          padding: 9px 10px;
-          margin-bottom: 8px;
-          border-radius: 10px;
-          border: 1px solid rgba(148, 163, 184, 0.8);
-          background: #020617;
-          color: #e5e7eb;
-          font-size: 13px;
-        }
-        .voice-auth-actions {
-          display: flex;
-          gap: 8px;
-          margin-top: 6px;
-        }
-        .voice-auth-actions button {
-          flex: 1;
-          padding: 8px 0;
-          border-radius: 999px;
-          border: none;
-          cursor: pointer;
-          font-size: 13px;
-        }
-        .voice-auth-actions button:first-child {
-          background: #475569;
-          color: #e5e7eb;
-        }
-        .voice-auth-actions button:last-child {
-          background: #2563eb;
-          color: #dbeafe;
-        }
-        .ai-glow {
-          box-shadow: 0 0 14px rgba(56, 189, 248, 0.8), 0 0 32px rgba(59, 130, 246, 0.8);
-          animation: aiGlow 1.2s ease-in-out infinite;
-        }
-        @keyframes aiGlow {
-          0%,100% {
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.7), 0 0 24px rgba(56, 189, 248, 0.5);
-          }
-          50% {
-            box-shadow: 0 0 24px rgba(56, 189, 248, 1), 0 0 42px rgba(37, 99, 235, 0.9);
-          }
-        }
+        @keyframes voiceWave { 0%,100% { height: 6px; } 50% { height: 20px; } }
+        .voice-stop-btn { width: 34px; height: 34px; border-radius: 999px; border: none; cursor: pointer; display: grid; place-items: center; background: #ef4444; color: #fee2e2; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); animation: pulseStop 1.4s infinite; }
+        .voice-stop-btn.hidden { display: none !important; }
+        @keyframes pulseStop { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); } 70% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        .voice-auth-modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(6px); z-index: 1300; opacity: 0; pointer-events: none; transition: opacity .22s ease; }
+        .voice-auth-modal.open { opacity: 1; pointer-events: auto; }
+        .voice-auth-card { width: 90%; max-width: 320px; background: radial-gradient(circle at top, #0f172a, #020617 70%); border-radius: 22px; padding: 18px 18px 16px; box-shadow: 0 22px 45px rgba(15, 23, 42, 0.9); color: #e5e7eb; text-align: center; border: 1px solid rgba(148, 163, 184, 0.5); }
+        .voice-auth-card h3 { font-size: 18px; margin-bottom: 4px; }
+        .voice-auth-card p { font-size: 13px; color: #9ca3af; margin-bottom: 10px; }
+        .voice-auth-card input { width: 100%; padding: 9px 10px; margin-bottom: 8px; border-radius: 10px; border: 1px solid rgba(148, 163, 184, 0.8); background: #020617; color: #e5e7eb; font-size: 13px; }
+        .voice-auth-actions { display: flex; gap: 8px; margin-top: 6px; }
+        .voice-auth-actions button { flex: 1; padding: 8px 0; border-radius: 999px; border: none; cursor: pointer; font-size: 13px; }
+        .voice-auth-actions button:first-child { background: #475569; color: #e5e7eb; }
+        .voice-auth-actions button:last-child { background: #2563eb; color: #dbeafe; }
+        .ai-glow { box-shadow: 0 0 14px rgba(56, 189, 248, 0.8), 0 0 32px rgba(59, 130, 246, 0.8); animation: aiGlow 1.2s ease-in-out infinite; }
+        @keyframes aiGlow { 0%,100% { box-shadow: 0 0 10px rgba(56, 189, 248, 0.7), 0 0 24px rgba(56, 189, 248, 0.5); } 50% { box-shadow: 0 0 24px rgba(56, 189, 248, 1), 0 0 42px rgba(37, 99, 235, 0.9); } }
       `;
       document.head.appendChild(style);
     }
 
-    // проверяем, не создан ли виджет ранее
     if (document.getElementById('ai-voice-btn')) return;
     const floating = document.getElementById('ai-floating-global');
     if (!floating) return;
 
     const avatarSrc = '/assets/images/albamenai.jpg';
-
-    // кнопка на плавающем блоке
     const voiceBtn = document.createElement('button');
     voiceBtn.className = 'ai-voice-btn';
     voiceBtn.id = 'ai-voice-btn';
@@ -637,7 +464,6 @@ runAfterDomReady(() => {
     voiceBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>';
     floating.appendChild(voiceBtn);
 
-    // панель голосового чата
     const voicePanel = document.createElement('div');
     voicePanel.id = 'ai-panel-voice';
     voicePanel.className = 'ai-panel-voice';
@@ -651,9 +477,7 @@ runAfterDomReady(() => {
         <div class="ai-status-text" id="voice-status-text">${t.talkPrompt}</div>
         <div class="voice-controls">
           <div class="voice-wave hidden" id="voice-wave">
-            <div class="voice-bar"></div>
-            <div class="voice-bar"></div>
-            <div class="voice-bar"></div>
+            <div class="voice-bar"></div><div class="voice-bar"></div><div class="voice-bar"></div>
           </div>
           <button class="voice-stop-btn hidden" id="voice-stop-btn">■</button>
         </div>
@@ -661,7 +485,6 @@ runAfterDomReady(() => {
     `;
     document.body.appendChild(voicePanel);
 
-    // модальное окно для имени/возраста
     const authModal = document.createElement('div');
     authModal.id = 'voice-auth-modal';
     authModal.className = 'voice-auth-modal';
@@ -679,7 +502,6 @@ runAfterDomReady(() => {
     `;
     document.body.appendChild(authModal);
 
-    // ссылки на элементы
     const messages = document.getElementById('voice-messages-list');
     const status   = document.getElementById('voice-status-text');
     const wave     = document.getElementById('voice-wave');
@@ -696,6 +518,8 @@ runAfterDomReady(() => {
     let processor    = null;
     let inputSource  = null;
     let isVoiceActive = false;
+    let audioQueue = [];
+    let isPlaying = false;
 
     voiceBtn.addEventListener('click', () => {
       voicePanel.classList.add('ai-open');
@@ -726,7 +550,7 @@ runAfterDomReady(() => {
     function showAuthModal() { authModal.classList.add('open'); }
     function hideAuthModal() { authModal.classList.remove('open'); }
 
-    function startVoiceChat() {
+    async function startVoiceChat() {
       if (isVoiceActive) return;
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         status.textContent = t.error;
@@ -742,140 +566,118 @@ runAfterDomReady(() => {
         + '?name=' + encodeURIComponent(savedName)
         + '&age=' + encodeURIComponent(savedAge);
 
-      audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
-      websocket = new WebSocket(wsUrl);
-
-      websocket.onopen = async () => {
-        isVoiceActive = true;
-        status.textContent = t.listening;
-        await startMicrophone();
-      };
-      websocket.onclose = stopVoiceChat;
-      websocket.onerror = stopVoiceChat;
-      websocket.onmessage = (ev) => {
-        try {
-          const data = JSON.parse(ev.data);
-          if (data.serverContent && data.serverContent.modelTurn && data.serverContent.modelTurn.parts) {
-            for (const part of data.serverContent.modelTurn.parts) {
-              if (part.text) {
-                let reply = part.text;
-                // обрабатываем теги сохранения
-                const n1 = reply.match(/<SAVE_NAME:(.*?)>/i);
-                if (n1) {
-                  localStorage.setItem('albamen_user_name', n1[1].trim());
-                  reply = reply.replace(n1[0], '');
+      try {
+        websocket = new WebSocket(wsUrl);
+        websocket.onopen = async () => {
+            isVoiceActive = true;
+            status.textContent = t.listening;
+            await startMicrophone();
+        };
+        websocket.onclose = () => { stopVoiceChat(); };
+        websocket.onerror = () => { status.textContent = t.error; stopVoiceChat(); };
+        websocket.onmessage = async (ev) => {
+            const data = JSON.parse(ev.data);
+            if (data.serverContent && data.serverContent.modelTurn && data.serverContent.modelTurn.parts) {
+                for (const part of data.serverContent.modelTurn.parts) {
+                    if (part.inlineData && part.inlineData.mimeType.startsWith('audio/pcm')) {
+                        queueAudio(part.inlineData.data);
+                    }
                 }
-                const n2 = reply.match(/<SAVENAME:(.*?)>/i);
-                if (n2) {
-                  localStorage.setItem('albamen_user_name', n2[1].trim());
-                  reply = reply.replace(n2[0], '');
-                }
-                const a1 = reply.match(/<SAVE_AGE:(.*?)>/i);
-                if (a1) {
-                  localStorage.setItem('albamen_user_age', a1[1].trim());
-                  reply = reply.replace(a1[0], '');
-                }
-                const a2 = reply.match(/<SAVEAGE:(.*?)>/i);
-                if (a2) {
-                  localStorage.setItem('albamen_user_age', a2[1].trim());
-                  reply = reply.replace(a2[0], '');
-                }
-                if (reply.trim()) addVoiceMessage(reply.trim());
-              }
-              if (part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.indexOf('audio/') === 0) {
-                playAudioChunk(part.inlineData.data);
-              }
             }
-          }
-        } catch (e) {
-          console.error(e);
-        }
-      };
+        };
+      } catch (err) { stopVoiceChat(); }
     }
 
     async function startMicrophone() {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { channelCount: 1, sampleRate: 24000 }
-      });
-      inputSource = audioContext.createMediaStreamSource(stream);
-      processor = audioContext.createScriptProcessor(4096, 1, 1);
-      processor.onaudioprocess = (e) => {
-        if (!websocket || websocket.readyState !== WebSocket.OPEN) return;
-        const inputData = e.inputBuffer.getChannelData(0);
-        const pcm16 = new Int16Array(inputData.length);
-        for (let i = 0; i < inputData.length; i++) {
-          const s = Math.max(-1, Math.min(1, inputData[i]));
-          pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: { channelCount: 1, sampleRate: 16000, echoCancellation: true, noiseSuppression: true }
+            });
+            const source = audioContext.createMediaStreamSource(stream);
+            processor = audioContext.createScriptProcessor(4096, 1, 1);
+            processor.onaudioprocess = (e) => {
+                if (!websocket || websocket.readyState !== WebSocket.OPEN) return;
+                const inputData = e.inputBuffer.getChannelData(0);
+                const pcm16 = new Int16Array(inputData.length);
+                for (let i = 0; i < inputData.length; i++) {
+                    const s = Math.max(-1, Math.min(1, inputData[i]));
+                    pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                }
+                let binary = '';
+                const bytes = new Uint8Array(pcm16.buffer);
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                const base64Audio = btoa(binary);
+                websocket.send(JSON.stringify({
+                    realtime_input: { media_chunks: [{ mime_type: "audio/pcm", data: base64Audio }] }
+                }));
+            };
+            source.connect(processor);
+            processor.connect(audioContext.destination);
+        } catch (e) { status.textContent = "Mic Error"; }
+    }
+
+    function queueAudio(base64Data) {
+        const binaryString = atob(base64Data);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+        const int16 = new Int16Array(bytes.buffer);
+        const float32 = new Float32Array(int16.length);
+        for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768.0;
+        audioQueue.push(float32);
+        if (!isPlaying) playNextChunk();
+    }
+
+    function playNextChunk() {
+        if (audioQueue.length === 0) {
+            isPlaying = false;
+            const bigAvatar = voicePanel.querySelector('.ai-chat-avatar-large');
+            if (avatarTrigger) avatarTrigger.classList.remove('ai-glow');
+            if (bigAvatar) bigAvatar.classList.remove('ai-glow');
+            return;
         }
-        const bytes = new Uint8Array(pcm16.buffer);
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        const base64Audio = btoa(binary);
-        websocket.send(JSON.stringify({
-          realtime_input: { media_chunks: [{ mime_type: 'audio/pcm', data: base64Audio }] }
-        }));
-      };
-      inputSource.connect(processor);
-      processor.connect(audioContext.destination);
+        isPlaying = true;
+        const chunk = audioQueue.shift();
+        if (!audioContext) return;
+        
+        const buffer = audioContext.createBuffer(1, chunk.length, 24000);
+        buffer.getChannelData(0).set(chunk);
+        const source = audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioContext.destination);
+        const bigAvatar = voicePanel.querySelector('.ai-chat-avatar-large');
+        if (avatarTrigger) avatarTrigger.classList.add('ai-glow');
+        if (bigAvatar) bigAvatar.classList.add('ai-glow');
+        
+        source.onended = playNextChunk;
+        source.start();
     }
 
     function stopVoiceChat() {
       if (!isVoiceActive && !audioContext && !websocket) return;
       isVoiceActive = false;
+      isPlaying = false;
+      audioQueue = [];
       try { if (websocket) websocket.close(); } catch (e) {}
       try { if (processor) processor.disconnect(); } catch (e) {}
       try { if (inputSource) inputSource.disconnect(); } catch (e) {}
       try { if (audioContext) audioContext.close(); } catch (e) {}
+      audioContext = null; websocket = null; processor = null;
       wave.classList.add('hidden');
       stopBtn.classList.add('hidden');
       status.textContent = t.talkPrompt;
-    }
-
-    function addVoiceMessage(text) {
-      const div = document.createElement('div');
-      div.className = 'ai-msg bot';
-      div.textContent = text;
-      messages.appendChild(div);
-      messages.scrollTop = messages.scrollHeight;
-    }
-
-    function playAudioChunk(base64String) {
-      if (!audioContext) return;
-      const binaryString = atob(base64String);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      const int16Data = new Int16Array(bytes.buffer);
-      const float32Data = new Float32Array(int16Data.length);
-      for (let i = 0; i < int16Data.length; i++) {
-        float32Data[i] = int16Data[i] / 32768.0;
-      }
-      const buffer = audioContext.createBuffer(1, float32Data.length, 24000);
-      buffer.getChannelData(0).set(float32Data);
-      const source = audioContext.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioContext.destination);
-
-      // включаем свечение аватара на время воспроизведения
       const bigAvatar = voicePanel.querySelector('.ai-chat-avatar-large');
-      if (avatarTrigger) avatarTrigger.classList.add('ai-glow');
-      if (bigAvatar) bigAvatar.classList.add('ai-glow');
-
-      source.onended = () => {
-        if (avatarTrigger) avatarTrigger.classList.remove('ai-glow');
-        if (bigAvatar) bigAvatar.classList.remove('ai-glow');
-      };
-      source.start(0);
+      if (avatarTrigger) avatarTrigger.classList.remove('ai-glow');
+      if (bigAvatar) bigAvatar.classList.remove('ai-glow');
     }
   }
 }); // END runAfterDomReady
 
 // -------------------- HELPER FUNCTIONS --------------------
 
-// Вызывает функцию, когда DOM готов (или сразу, если уже готов)
 function runAfterDomReady(fn) {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', fn, { once: true });
@@ -884,125 +686,91 @@ function runAfterDomReady(fn) {
   }
 }
 
-// ================= MODEL VIEWER LOADER =================
+// ==========================================
+// 📊 ANALYTICS INJECTOR (Google + Yandex)
+// ==========================================
+function injectAnalytics() {
+  // --- 1. Google Analytics (G-FV3RXWJ5PQ) ---
+  if (!document.querySelector('script[src*="googletagmanager"]')) {
+    const gScript = document.createElement('script');
+    gScript.async = true;
+    gScript.src = "https://www.googletagmanager.com/gtag/js?id=G-FV3RXWJ5PQ";
+    document.head.appendChild(gScript);
+
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-FV3RXWJ5PQ');
+    console.log("Google Analytics Injected");
+  }
+
+  // --- 2. Yandex Metrika (105726731) ---
+  if (!window.ym) {
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0];
+        k.async=1;
+        k.src=r;
+        if(a) { a.parentNode.insertBefore(k,a); } 
+        else { document.head.appendChild(k); }
+    })(window, document, "script", "https://mc.yandex.ru/metrika/tag.js?id=105726731", "ym");
+
+    ym(105726731, "init", {
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true,
+        webvisor:true,
+        ecommerce:"dataLayer"
+    });
+    console.log("Yandex Metrika Injected");
+  }
+}
+
 function injectModelViewerStyles() {
   if (document.getElementById("albaspace-model-viewer-styles")) return;
-
   const style = document.createElement("style");
   style.id = "albaspace-model-viewer-styles";
   style.textContent = `
-    model-viewer {
-      width: 100%;
-      height: 600px;
-      margin-top: 30px;
-      background: rgba(0, 0, 0, 0.65);
-      border-radius: 12px;
-      box-shadow: 0 0 30px rgba(0, 150, 255, 0.5);
-      display: block;
-    }
-
-    @media (max-width: 768px) {
-      model-viewer {
-        height: 420px;
-        margin-top: 20px;
-      }
-    }
-
-    /* Ensure model-viewer is visible and interactive */
-    model-viewer[ar-status="session-started"] {
-      display: block !important;
-    }
-
-    /* Loading state */
-    model-viewer::part(default-progress-bar) {
-      background: linear-gradient(90deg, #00b4ff, #00e5ff);
-    }
+    model-viewer { width: 100%; height: 600px; margin-top: 30px; background: rgba(0, 0, 0, 0.65); border-radius: 12px; box-shadow: 0 0 30px rgba(0, 150, 255, 0.5); display: block; }
+    @media (max-width: 768px) { model-viewer { height: 420px; margin-top: 20px; } }
+    model-viewer[ar-status="session-started"] { display: block !important; }
+    model-viewer::part(default-progress-bar) { background: linear-gradient(90deg, #00b4ff, #00e5ff); }
   `;
   document.head.appendChild(style);
 }
 
 function ensureModelViewerLoaded() {
-  // Первый вариант: проверяем наличие model-viewer элемента
   const hasModelViewer = !!document.querySelector("model-viewer");
-
   if (!hasModelViewer) return;
-
-  // Если custom element уже зарегистрирован - ничего не делаем
-  if (window.customElements && window.customElements.get("model-viewer")) {
-    return;
-  }
-
-  // Вариант 1: Пытаемся загрузить из Google CDN (основной)
+  if (window.customElements && window.customElements.get("model-viewer")) return;
   const googleSrc = "https://ajax.googleapis.com/ajax/libs/model-viewer/3.0.0/model-viewer.min.js";
-
-  // Вариант 2: Резервный источник
   const fallbackSrc = "https://unpkg.com/@google/model-viewer@3.0.0/dist/model-viewer.min.js";
-
-  // Проверяем, что скрипт еще не загружается
   const existingGoogleScript = document.querySelector(`script[src="${googleSrc}"]`);
-  const existingFallbackScript = document.querySelector(`script[src="${fallbackSrc}"]`);
+  if (existingGoogleScript) return;
 
-  if (existingGoogleScript || existingFallbackScript) {
-    return;
-  }
-
-  // Пытаемся загрузить с основного CDN
   const loadModelViewer = () => {
-    if (window.customElements && window.customElements.get("model-viewer")) {
-      return; // Успешно загружен
-    }
-
+    if (window.customElements && window.customElements.get("model-viewer")) return;
     const script = document.createElement("script");
     script.type = "module";
-
-    // Сначала пытаемся основной CDN
     script.src = googleSrc;
-
-    // Если основной CDN не работает, переключаемся на резервный
     script.onerror = () => {
-      if (window.customElements && window.customElements.get("model-viewer")) {
-        return;
-      }
-
+      if (window.customElements && window.customElements.get("model-viewer")) return;
       const fallbackScript = document.createElement("script");
       fallbackScript.type = "module";
       fallbackScript.src = fallbackSrc;
       document.head.appendChild(fallbackScript);
     };
-
     document.head.appendChild(script);
   };
-
-  // Даем время на загрузку главного скрипта в head
   setTimeout(loadModelViewer, 800);
-
-  // На всякий случай - финальная проверка через 3 секунды
-  setTimeout(() => {
-    if (!window.customElements || !window.customElements.get("model-viewer")) {
-      const fallbackScript = document.createElement("script");
-      fallbackScript.type = "module";
-      fallbackScript.src = fallbackSrc;
-      fallbackScript.async = true;
-      document.head.appendChild(fallbackScript);
-    }
-  }, 3000);
 }
 
 function createPreloaderLoader() {
   let loaded = false;
-
   return function ensurePreloaderScript() {
     if (loaded) return;
-
-    const preloader = document.getElementById("preloader");
-    if (!preloader) return;
-
-    const existing = document.querySelector("script[data-preloader-loader]");
-    if (existing) {
-      loaded = true;
-      return;
-    }
-
+    if (document.querySelector("script[data-preloader-loader]")) { loaded = true; return; }
     const script = document.createElement("script");
     script.src = "/assets/js/preloader.js";
     script.defer = true;
@@ -1014,19 +782,11 @@ function createPreloaderLoader() {
 
 function createModelPreloaderLoader() {
   let loaded = false;
-
   return function ensureModelPreloader() {
     if (loaded) return;
-    const hasViewer = !!document.querySelector('model-viewer');
-    if (!hasViewer) return;
-
-    const existing = document.querySelector('script[data-model-preloader]');
-    if (existing) {
-      loaded = true;
-      return;
-    }
-
-    const script = document.createElement('script');
+    if (!document.querySelector('model-viewer')) return;
+    if (document.querySelector('script[data-model-preloader]')) { loaded = true; return; }
+    const script = document.createElement("script");
     script.src = '/assets/js/model-preloader.js';
     script.defer = true;
     script.dataset.modelPreloader = 'true';
@@ -1037,14 +797,10 @@ function createModelPreloaderLoader() {
 
 function createModelNavLoader() {
   let loaded = false;
-
   return function ensureModelNavLoader() {
     if (loaded) return;
-
-    const existing = document.querySelector('script[data-model-nav-loader]');
-    if (existing) { loaded = true; return; }
-
-    const script = document.createElement('script');
+    if (document.querySelector('script[data-model-nav-loader]')) { loaded = true; return; }
+    const script = document.createElement("script");
     script.src = '/assets/js/model-nav-loader.js';
     script.defer = true;
     script.dataset.modelNavLoader = 'true';
@@ -1053,30 +809,20 @@ function createModelNavLoader() {
   };
 }
 
-// ================= NAV =================
 function markActiveNav() {
   const path = normalizePath(window.location.pathname || "/");
   const navLinks = document.querySelectorAll(".main-nav a");
   let matched = false;
-
   navLinks.forEach((a) => {
     const href = a.getAttribute("href");
     if (!href) return;
-
     try {
       const linkPath = normalizePath(new URL(href, window.location.origin).pathname);
-      if (linkPath === path) {
-        a.classList.add("active");
-        matched = true;
-      }
+      if (linkPath === path) { a.classList.add("active"); matched = true; }
     } catch (e) {
-      if (href && path.endsWith(href)) {
-        a.classList.add("active");
-        matched = true;
-      }
+      if (href && path.endsWith(href)) { a.classList.add("active"); matched = true; }
     }
   });
-
   if (!matched) {
     navLinks.forEach((a) => {
       const text = (a.textContent || "").trim().toUpperCase();
@@ -1091,23 +837,18 @@ function normalizePath(p) {
   return p;
 }
 
-// ================= LANG =================
 function setupLangSwitch() {
   const path = window.location.pathname || "/";
   const isEn = path.startsWith("/eng/");
   const currentLang = isEn ? "en" : "tr";
-
   const container = document.querySelector(".top-lang-switch");
   if (!container) return;
-
   container.querySelectorAll("[data-lang]").forEach((btn) => {
     const lang = btn.getAttribute("data-lang");
     btn.classList.toggle("active", lang === currentLang);
-
     btn.addEventListener("click", (e) => {
       e.preventDefault();
       if (lang === currentLang) return;
-
       const targetPath = lang === "en" ? toEnPath(path) : toTrPath(path);
       window.location.href = targetPath;
     });
@@ -1127,81 +868,39 @@ function toTrPath(path) {
   return path.replace(/^\/eng/, "") || "/index.html";
 }
 
-// ================= FOOTER ENHANCER =================
 function enhanceFooter(root) {
   injectFooterStyles();
-
   const footer = root.querySelector("footer");
   if (!footer || footer.classList.contains("alba-footer-v5")) return;
   footer.classList.add("alba-footer-v5");
-
-  const allowCallSquare = /\/hizmetler(\.html)?\/?$/i.test(
-    window.location.pathname || ""
-  );
-  if (!allowCallSquare) {
-    footer.querySelectorAll(".alba-call-square").forEach((el) => el.remove());
-  }
-
-  const socials =
-    footer.querySelector(".social-icons") ||
-    footer.querySelector(".footer-socials") ||
-    footer.querySelector("[data-socials]");
+  const allowCallSquare = /\/hizmetler(\.html)?\/?$/i.test(window.location.pathname || "");
+  if (!allowCallSquare) { footer.querySelectorAll(".alba-call-square").forEach((el) => el.remove()); }
+  const socials = footer.querySelector(".social-icons") || footer.querySelector(".footer-socials") || footer.querySelector("[data-socials]");
   if (socials) socials.classList.add("alba-footer-socials");
-
-  // Modified: prioritize .footer-actions before .footer-right to avoid clearing social icons
-  const addressContainer =
-    footer.querySelector(".footer-actions") ||
-    footer.querySelector(".footer-right") ||
-    footer.querySelector(".footer-address") ||
-    footer.querySelector(".footer-contact") ||
-    footer.querySelector("[data-footer-address]");
-
+  const addressContainer = footer.querySelector(".footer-actions") || footer.querySelector(".footer-right") || footer.querySelector(".footer-address") || footer.querySelector(".footer-contact") || footer.querySelector("[data-footer-address]");
   if (!addressContainer) return;
-
   const rawAddrText = (addressContainer.innerText || "").trim();
   if (!rawAddrText) return;
-
   const merkezBlock = extractSection(rawAddrText, /Merkez Ofis/i, /Adana Şube/i);
   const adanaBlock = extractSection(rawAddrText, /Adana Şube/i, null);
-
-  const phoneRaw = findPhone(rawAddrText) || findPhone(footer.innerText || "");
-  const phoneTel = phoneRaw ? phoneRaw.replace(/[^\d+]/g, "") : "";
-
   const mailAnchors = footer.querySelectorAll('a[href^="mailto:"]');
   mailAnchors.forEach((el) => el.remove());
-
   const contactPanel = document.createElement('div');
   contactPanel.className = 'alba-footer-contact-panel';
-
   const phoneBtn = document.createElement('a');
   phoneBtn.className = 'alba-footer-action';
   phoneBtn.href = 'tel:+9053877818';
-  phoneBtn.innerHTML = `
-    <div class="action-row">
-      <span class="action-icon">☎</span>
-      <span class="action-text">+90 538 778 18</span>
-    </div>
-    <div class="action-hint alba-blink">Aramak için dokunun</div>
-  `;
+  phoneBtn.innerHTML = `<div class="action-row"><span class="action-icon">☎</span><span class="action-text">+90 538 778 18</span></div><div class="action-hint alba-blink">Aramak için dokunun</div>`;
   contactPanel.appendChild(phoneBtn);
-
   const emailBtn = document.createElement('a');
   emailBtn.className = 'alba-footer-action';
   emailBtn.href = 'mailto:hello@albaspace.com.tr';
-  emailBtn.innerHTML = `
-    <div class="action-row">
-      <span class="action-icon">✉</span>
-      <span class="action-text">hello@albaspace.com.tr</span>
-    </div>
-    <div class="action-hint alba-blink">Bize yazın</div>
-  `;
+  emailBtn.innerHTML = `<div class="action-row"><span class="action-icon">✉</span><span class="action-text">hello@albaspace.com.tr</span></div><div class="action-hint alba-blink">Bize yazın</div>`;
   contactPanel.appendChild(emailBtn);
-
   const map1 = buildMapButton(merkezBlock);
   const map2 = buildMapButton(adanaBlock);
   if (map1) contactPanel.appendChild(map1);
   if (map2) contactPanel.appendChild(map2);
-
   addressContainer.innerHTML = '';
   addressContainer.style.display = 'flex';
   addressContainer.style.flexDirection = 'column';
@@ -1214,10 +913,7 @@ function enhanceFooter(root) {
 
 function buildMapButton(blockText) {
   if (!blockText) return null;
-  const lines = blockText
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const lines = blockText.split('\n').map((s) => s.trim()).filter(Boolean);
   if (!lines.length) return null;
   const title = lines[0];
   const addressLines = lines.slice(1).filter((l) => !/(\+?\s*\d[\d\s()\-]{7,}\d)/.test(l));
@@ -1225,19 +921,11 @@ function buildMapButton(blockText) {
   if (!address) return null;
   const a = document.createElement('a');
   a.className = 'alba-footer-action';
-  a.href =
-    'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address);
+  a.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address);
   a.target = '_blank';
   a.rel = 'noopener';
   const hintTr = 'Haritayı açmak için dokunun';
-  a.innerHTML = `
-    <div class="action-row">
-      <span class="action-icon">📍</span>
-      <span class="action-text">${escapeHtml(title)}</span>
-    </div>
-    <div class="map-address">${escapeHtml(address)}</div>
-    <div class="action-hint alba-blink">${hintTr}</div>
-  `;
+  a.innerHTML = `<div class="action-row"><span class="action-icon">📍</span><span class="action-text">${escapeHtml(title)}</span></div><div class="map-address">${escapeHtml(address)}</div><div class="action-hint alba-blink">${hintTr}</div>`;
   return a;
 }
 
@@ -1245,13 +933,10 @@ function extractSection(text, startRegex, beforeRegex) {
   if (!text) return "";
   const start = text.search(startRegex);
   if (start === -1) return "";
-
   const sliced = text.slice(start);
   if (!beforeRegex) return sliced.trim();
-
   const end = sliced.search(beforeRegex);
   if (end === -1) return sliced.trim();
-
   return sliced.slice(0, end).trim();
 }
 
@@ -1262,82 +947,24 @@ function findPhone(text) {
 }
 
 function escapeHtml(str) {
-  return String(str || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  return String(str || "").replaceAll("&", "&").replaceAll("<", "<").replaceAll(">", ">").replaceAll('"', "").replaceAll("'", "'");
 }
 
 function injectFooterStyles() {
   if (document.getElementById("alba-footer-style-v5")) return;
-
   const s = document.createElement("style");
   s.id = "alba-footer-style-v5";
   s.textContent = `
-    .alba-footer-contact-panel {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      margin-top: 20px;
-    }
-    .alba-footer-action {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 10px 16px;
-      border-radius: 12px;
-      background: rgba(15,23,42,0.88);
-      border: 1px solid rgba(148,163,184,0.45);
-      color: #e5e7eb;
-      text-decoration: none;
-      width: 100%;
-      max-width: 360px;
-      box-shadow: 0 16px 40px rgba(15,23,42,0.8);
-      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-    }
-    .alba-footer-action:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 20px 55px rgba(15,23,42,0.95);
-      border-color: rgba(56,189,248,0.8);
-      background: radial-gradient(circle at top, rgba(15,23,42,1), rgba(8,47,73,0.96));
-    }
-    .action-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      font-weight: 500;
-    }
-    .action-icon {
-      font-size: 18px;
-    }
-    .action-text {
-      letter-spacing: 0.01em;
-    }
-    .map-address {
-      margin-top: 6px;
-      font-size: 13px;
-      color: #cbd5f5;
-      text-align: center;
-      line-height: 1.35;
-    }
-    .action-hint {
-      margin-top: 6px;
-      font-size: 12px;
-      color: #60a5fa;
-    }
-    .alba-blink {
-      animation: albaBlink 1.6s ease-in-out infinite;
-    }
-    @keyframes albaBlink {
-      0%, 100% { opacity: 1; transform: translateY(0); }
-      50% { opacity: 0.4; transform: translateY(-1px); }
-    }
+    .alba-footer-contact-panel { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 20px; }
+    .alba-footer-action { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 16px; border-radius: 12px; background: rgba(15,23,42,0.88); border: 1px solid rgba(148,163,184,0.45); color: #e5e7eb; text-decoration: none; width: 100%; max-width: 360px; box-shadow: 0 16px 40px rgba(15,23,42,0.8); transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease; }
+    .alba-footer-action:hover { transform: translateY(-1px); box-shadow: 0 20px 55px rgba(15,23,42,0.95); border-color: rgba(56,189,248,0.8); background: radial-gradient(circle at top, rgba(15,23,42,1), rgba(8,47,73,0.96)); }
+    .action-row { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }
+    .action-icon { font-size: 18px; }
+    .action-text { letter-spacing: 0.01em; }
+    .map-address { margin-top: 6px; font-size: 13px; color: #cbd5f5; text-align: center; line-height: 1.35; }
+    .action-hint { margin-top: 6px; font-size: 12px; color: #60a5fa; }
+    .alba-blink { animation: albaBlink 1.6s ease-in-out infinite; }
+    @keyframes albaBlink { 0%, 100% { opacity: 1; transform: translateY(0); } 50% { opacity: 0.4; transform: translateY(-1px); } }
   `;
   document.head.appendChild(s);
 }
