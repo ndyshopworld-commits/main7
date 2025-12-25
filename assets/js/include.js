@@ -175,20 +175,16 @@ runAfterDomReady(() => {
     // Проверяем, не создан ли виджет ранее
     if (document.getElementById('ai-floating-global')) return;
 
-    // 1. Создаем контейнер для кнопок (Картинка + Кнопка вызова)
+    // 1. Создаем контейнер для кнопок (теперь ТОЛЬКО аватар)
     const floating = document.createElement('div');
     floating.className = 'ai-floating';
     floating.id = 'ai-floating-global';
     const avatarSrc = '/assets/images/albamenai.jpg';
 
-    // HTML для кнопок в футере
     floating.innerHTML = `
       <div class="ai-hero-avatar" id="ai-avatar-trigger">
         <img src="${avatarSrc}" alt="Albamen AI">
       </div>
-      <button class="ai-call-btn pulse" id="ai-call-trigger" aria-label="Call AI">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-      </button>
     `;
 
     // Закрепляем плавающий блок в body, чтобы он всегда был на экране
@@ -220,7 +216,6 @@ runAfterDomReady(() => {
 
     // Получаем ссылки на элементы
     const avatarTrigger  = document.getElementById('ai-avatar-trigger');
-    const callTrigger    = document.getElementById('ai-call-trigger');
     const closeBtn       = document.getElementById('ai-close-btn');
     const sendBtn        = document.getElementById('ai-send-btn');
     const micBtn         = document.getElementById('ai-mic-btn');
@@ -239,9 +234,8 @@ runAfterDomReady(() => {
       statusText.style.display = 'block';
     };
 
-    // Открытие по клику на аватар или кнопку звонка
+    // Открытие по клику ТОЛЬКО на аватар
     avatarTrigger.addEventListener('click', openPanel);
-    callTrigger.addEventListener('click', openPanel);
     closeBtn.addEventListener('click', closePanel);
 
     // Отправка сообщений
@@ -981,13 +975,14 @@ function ensureModelViewerLoaded() {
 
   // На всякий случай - финальная проверка через 3 секунды
   setTimeout(() => {
-    if (!window.customElements || !window.customElements.get("model-viewer")) {
-      const fallbackScript = document.createElement("script");
-      fallbackScript.type = "module";
-      fallbackScript.src = fallbackSrc;
-      fallbackScript.async = true;
-      document.head.appendChild(fallbackScript);
+    if (!window.customElements || window.customElements.get("model-viewer")) {
+      return;
     }
+    const fallbackScript = document.createElement("script");
+    fallbackScript.type = "module";
+    fallbackScript.src = fallbackSrc;
+    fallbackScript.async = true;
+    document.head.appendChild(fallbackScript);
   }, 3000);
 }
 
