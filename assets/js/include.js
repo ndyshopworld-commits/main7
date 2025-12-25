@@ -112,7 +112,47 @@ runAfterDomReady(() => {
           }
         }
         if (!html) throw lastErr || new Error("Unknown include error for " + url);
-        el.innerHTML = html;
+
+        // ---- НОВОЕ: корректно исполняем <script> из загруженного HTML ----
+        const tmp = document.createElement("div");
+        tmp.innerHTML = html;
+
+        // собираем все скрипты
+        const scripts = Array.from(tmp.querySelectorAll("script"));
+
+        // убираем <script> из HTML, чтобы в el.innerHTML не висели "мёртвые" теги
+        scripts.forEach((s) => {
+          if (s.parentNode) s.parentNode.removeChild(s);
+        });
+
+        // вставляем "чистую" разметку (без скриптов)
+        el.innerHTML = tmp.innerHTML;
+
+        // заново создаём и исполняем скрипты (Yandex, GA и т.п.)
+        scripts.forEach((oldScript) => {
+          const newScript = document.createElement("script");
+
+          // копируем атрибуты
+          Array.from(oldScript.attributes || []).forEach(({ name, value }) => {
+            if (name === "src") {
+              newScript.src = value;
+            } else {
+              newScript.setAttribute(name, value);
+            }
+          });
+
+          // переносим inline-код
+          if (!oldScript.src) {
+            newScript.textContent = oldScript.textContent || "";
+          }
+
+          // сохраняем async/defer
+          if (oldScript.async) newScript.async = true;
+          if (oldScript.defer) newScript.defer = true;
+
+          // добавляем в документ (выполнение начинается автоматически)
+          (document.head || document.documentElement).appendChild(newScript);
+        });
       };
 
       loadFragment()
@@ -211,7 +251,7 @@ runAfterDomReady(() => {
           </button>
           <input type="text" class="ai-input" id="ai-input-field" placeholder="${strings.placeholder}">
           <button class="ai-action-btn ai-send-btn-panel" id="ai-send-btn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
           </button>
         </div>
       </div>
