@@ -1,1491 +1,1343 @@
-/* БАЗОВЫЕ НАСТРОЙКИ
-   (НЕ трогаем background и color, чтобы страницы сами их задавали) */
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-}
+// Unified include.js for AlbaSpace website (Turkish)
+//
+// This script dynamically loads header and footer fragments, highlights the
+// current navigation item, provides a language switcher, keeps model-viewer
+// available with a fallback, and enhances the footer with neatly styled address
+// buttons and a call shortcut.
 
-/* =========================
-   HEADER
-   ========================= */
+runAfterDomReady(() => {
+  // Ensure a valid favicon is present
+  (function ensureFavicon() {
+    try {
+      const existing = document.querySelector('link[rel~="icon"]');
+      if (existing) {
+        if (existing.getAttribute('href') === '/favicon.png') {
+          existing.setAttribute('href', '/assets/images/albalogo.png');
+        }
+        return;
+      }
+      const l = document.createElement('link');
+      l.rel = 'icon';
+      l.type = 'image/png';
+      l.href = '/assets/images/albalogo.png';
+      document.head.appendChild(l);
+    } catch (e) {
+      /* silently ignore DOM issues */
+    }
+  })();
 
-.site-header{
-  background:#020617;
-  color:#e5e7eb;
-  border-bottom:1px solid #0f172a;
-}
+  // Загружаем CSS и скрипт для model-viewer без проверки includes
+  injectModelViewerStyles();
+  ensureModelViewerLoaded();
 
-.header-inner{
-  max-width:1200px;
-  margin:0 auto;
-  padding:10px 20px;
-  display:flex;
-  align-items:center;
-  gap:20px;
-  flex-wrap:wrap;
-  position:relative;
-}
+  // Создаём лоадеры для прелоадера и навигации 3D моделей
+  const ensurePreloaderScript  = createPreloaderLoader();
+  const ensureModelPreloader  = createModelPreloaderLoader();
+  const ensureModelNavLoader  = createModelNavLoader();
 
-/* Hide SHOP and DFS from header menu */
-.main-nav a[href="/shop.html"],
-.main-nav a[href="/dfs.html"],
-.main-nav a[href="/blog.html"]{
-  display:none !important;
-}
+  // ---------------- Mobile nav override ----------------
+  if (!document.getElementById("albaspace-nav-override-style")) {
+    const navStyle = document.createElement("style");
+    navStyle.id = "albaspace-nav-override-style";
+    navStyle.textContent = `
+      @media (max-width: 768px) {
+        nav.main-nav {
+          position: absolute;
+          top: calc(100% + 10px);
+          right: 12px;
+          width: 33vw;
+          max-width: 420px;
+          min-width: 220px;
+          background: #020617;
+          border: 1px solid rgba(15, 23, 42, 0.8);
+          border-radius: 10px;
+          box-shadow: 0 18px 45px rgba(56,189,248,0.25);
+          flex-direction: column;
+          padding: 8px 0;
+          z-index: 1001;
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
+          display: flex;
+          opacity: 0;
+          transform: translateY(-8px);
+          transform-origin: top center;
+          transition: opacity .28s ease, transform .28s ease;
+          pointer-events: none;
+          overflow: hidden;
+          will-change: opacity, transform;
+        }
+        nav.main-nav.nav-open {
+          opacity: 1;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
+        nav.main-nav a {
+          padding: 12px 18px;
+          font-size: 14px;
+          border-bottom: 1px solid rgba(15,23,42,0.6);
+          color: var(--text-main);
+          display: block;
+        }
+        nav.main-nav a:last-child { border-bottom: none; }
+      }
+    `;
+    document.head.appendChild(navStyle);
+  }
 
-.header-logo{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  text-decoration:none;
-  color:#e5e7eb;
-}
+  // ---------------- Load includes ----------------
+  // Поддерживаем атрибуты data-include и data-include-html
+  const includes = document.querySelectorAll("[data-include], [data-include-html]");
+  if (includes.length) {
+    includes.forEach((el) => {
+      const url = el.getAttribute("data-include") || el.getAttribute("data-include-html");
+      if (!url) return;
 
-.header-logo img{
-  width:40px;
-  height:40px;
-  border-radius:999px;
-  background:#0f172a;
-  padding:4px;
-}
+      // robust include loader with fallback for absolute/relative paths
+      const tryPaths = [url];
+      if (url.startsWith("/")) {
+        tryPaths.push(url.slice(1)); // fallback to relative path when served from sub-folders/CDNs
+      }
 
-.header-logo span{
-  font-weight:600;
-  font-size:16px;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-}
+      const loadFragment = async () => {
+        let html = "";
+        let lastErr;
+        for (const path of tryPaths) {
+          try {
+            const res = await fetch(path, { cache: "no-cache" });
+            if (!res.ok) throw new Error("Failed " + res.status + " for " + path);
+            html = await res.text();
+            break;
+          } catch (e) {
+            lastErr = e;
+          }
+        }
+        if (!html) throw lastErr || new Error("Unknown include error for " + url);
+        el.innerHTML = html;
+      };
 
-/* ===== HEADER LOGO FIX ===== */
-/* This ensures the AlbaSpace text-image in the header is NOT round/framed */
-.header-logo .albaspace-img {
-  border-radius: 0 !important;
-  border: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  padding: 0 !important;
-  /* Adjust height/width if necessary to match footer style */
-  height: auto;
-  max-height: 40px; /* Example constraint to keep it neat */
-  object-fit: contain;
-}
+      loadFragment()
+        .then(() => {
+          if (url.includes("header-")) {
+            // выполняем навигацию, переключатель языка и лоадеры
+            markActiveNav();
+            setupLangSwitch();
+            ensurePreloaderScript();
+            ensureModelPreloader();
+            ensureModelNavLoader();
+          }
+          if (url.includes("footer-")) {
+            enhanceFooter(el);
+            ensureModelPreloader();
+          }
+        })
+        .catch((err) => console.error("[include.js] include failed", url, err));
+    });
+  } else {
+    // если includes нет, всё равно загружаем базовый прелоадер для model-viewer
+    ensureModelPreloader();
+  }
 
-.header-logo img.albaspace-img{
-  height:22px;
-  width:auto;
-  object-fit:contain;
-}
+  // ===== GLOBAL AI WIDGET (Albamen / Albaman) =====
+  injectAiWidget();
+  ensureAiWidgetPinned();
+  injectVoiceWidget();
 
-.footer-logo img.albaspace-img{
-  height:48px;
-  width:auto;
-  object-fit:contain;
-}
+  function injectAiWidget() {
+    const path = window.location.pathname || '/';
+    const isEn = path.startsWith('/eng/');
 
-/* меню чуть правее и по центру между логотипом и соцсетями */
-.main-nav{
-  display:flex;
-  gap:16px;
-  flex-wrap:wrap;
-  font-size:14px;
-  flex:1;
-  justify-content:center;
-  margin:0 40px;
-}
+    // Тексты
+    const strings = isEn ? {
+      placeholder: 'Send a message...',
+      listening: 'Listening...',
+      connect: 'Connecting...',
+      initialStatus: 'How can I help you today?',
+      welcomeBack: 'Welcome back, ',
+      voiceNotSupported: 'Voice not supported',
+      connectionError: 'Connection error.'
+    } : {
+      placeholder: 'Bir mesaj yazın...',
+      listening: 'Dinliyorum...',
+      connect: 'Bağlanıyor...',
+      initialStatus: 'Bugün sana nasıl yardım edebilirim?',
+      welcomeBack: 'Tekrar hoş geldin, ',
+      voiceNotSupported: 'Ses desteği yok',
+      connectionError: 'Bağlantı hatası.'
+    };
 
-.main-nav a{
-  color:#d1d5db;
-  text-decoration:none;
-  padding-bottom:2px;
-  position:relative;
-}
+    // Память пользователя (локальное хранение)
+    const storedName = localStorage.getItem('albamen_user_name');
+    const storedAge = localStorage.getItem('albamen_user_age');
+    if (storedName) {
+      strings.initialStatus = strings.welcomeBack + storedName + '! 🚀';
+    }
 
-.main-nav a:hover,
-.main-nav a.active{
-  color:#ffffff;
-}
+    // Проверяем, не создан ли виджет ранее
+    if (document.getElementById('ai-floating-global')) return;
 
-.main-nav a.active::after{
-  content:"";
-  position:absolute;
-  left:0;
-  bottom:-2px;
-  width:100%;
-  height:2px;
-  background:#00c2ff;
-  border-radius:999px;
-}
+    // 1. Создаем контейнер для кнопок (Картинка + Кнопка вызова)
+    const floating = document.createElement('div');
+    floating.className = 'ai-floating';
+    floating.id = 'ai-floating-global';
+    const avatarSrc = '/assets/images/albamenai.jpg';
 
-.header-social{
-  margin-left:auto;
-  display:flex;
-  gap:14px;
-}
+    // HTML для кнопок в футере
+    floating.innerHTML = `
+      <div class="ai-hero-avatar" id="ai-avatar-trigger">
+        <img src="${avatarSrc}" alt="Albamen AI">
+      </div>
+      <button class="ai-call-btn pulse" id="ai-call-trigger" aria-label="Call AI">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+      </button>
+    `;
 
-/* Иконки соцсетей (PNG) в хедере */
-.header-social img{
-  width:22px;
-  height:22px;
-  display:block;
-  border-radius:6px;
-  transition:transform .15s,filter .2s;
-}
+    // Закрепляем плавающий блок в body, чтобы он всегда был на экране
+    document.body.appendChild(floating);
 
-.header-social svg.social-icon-svg{
-  width:22px;
-  height:22px;
-  display:block;
-  stroke:currentColor;
-  stroke-linecap:round;
-  stroke-linejoin:round;
-  fill:none;
-  transition:transform .15s,filter .2s;
-}
+    // 2. Создаем Панель Чата (Белую)
+    const panel = document.createElement('div');
+    panel.className = 'ai-panel-global';
+    panel.innerHTML = `
+      <div class="ai-panel-header">
+        <button class="ai-close-icon" id="ai-close-btn">×</button>
+      </div>
+      <div class="ai-panel-body">
+        <div class="ai-messages-list" id="ai-messages-list"></div>
+        <div class="ai-chat-avatar-large"><img src="${avatarSrc}" alt="Albamen"></div>
+        <div class="ai-status-text" id="ai-status-text">${strings.initialStatus}</div>
+        <div class="ai-input-area">
+          <button class="ai-action-btn ai-mic-btn-panel" id="ai-mic-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+          </button>
+          <input type="text" class="ai-input" id="ai-input-field" placeholder="${strings.placeholder}">
+          <button class="ai-action-btn ai-send-btn-panel" id="ai-send-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(panel);
 
-/* Force header social icons to use header text color (avoid accidental accent blue) */
-.site-header .header-social svg.social-icon-svg {
-  color: #e5e7eb !important;
-  stroke: #e5e7eb !important;
-}
+    // Получаем ссылки на элементы
+    const avatarTrigger  = document.getElementById('ai-avatar-trigger');
+    const callTrigger    = document.getElementById('ai-call-trigger');
+    const closeBtn       = document.getElementById('ai-close-btn');
+    const sendBtn        = document.getElementById('ai-send-btn');
+    const micBtn         = document.getElementById('ai-mic-btn');
+    const inputField     = document.getElementById('ai-input-field');
+    const msgList        = document.getElementById('ai-messages-list');
+    const statusText     = document.getElementById('ai-status-text');
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    const recognition = SpeechRec ? new SpeechRec() : null;
+    let isListening = false;
 
-/* =========================
-   AI WIDGET (RE-DESIGNED)
-   ========================= */
+    // Функции открытия и закрытия панели
+    const openPanel  = () => panel.classList.add('ai-open');
+    const closePanel = () => {
+      panel.classList.remove('ai-open');
+      panel.classList.remove('chat-active');
+      statusText.style.display = 'block';
+    };
 
-.ai-floating,
-.ai-floating.footer-docked {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 1100;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px; /* Расстояние между картинкой и кнопкой вызова */
-}
+    // Открытие по клику на аватар или кнопку звонка
+    avatarTrigger.addEventListener('click', openPanel);
+    callTrigger.addEventListener('click', openPanel);
+    closeBtn.addEventListener('click', closePanel);
 
-/* 1. Картинка-аватар (Albamen) */
-.ai-hero-avatar {
-  width: 104px;
-  height: 104px;
-  aspect-ratio: 1 / 1;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 3px solid rgba(56, 189, 248, 0.6); /* Легкая голубая обводка */
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-  cursor: pointer;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  background: #000;
-}
+    // Отправка сообщений
+    function sendMessage() {
+      const txt = inputField.value.trim();
+      if (!txt) return;
 
-.ai-hero-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: optimizeQuality;
-  transform: translateZ(0);
-}
+      // Переход в режим активного чата (скрывает большой аватар)
+      panel.classList.add('chat-active');
+      addMessage(txt, 'user');
+      inputField.value = '';
 
-.ai-hero-avatar:hover {
-  transform: scale(1.05);
-  box-shadow: 0 12px 30px rgba(56, 189, 248, 0.4);
-}
+      const loadingId = 'loading-' + Date.now();
+      addMessage('...', 'bot', loadingId);
+      statusText.textContent = strings.connect;
+      statusText.style.display = 'block';
 
-/* 2. Кнопка вызова (черная с иконкой) */
-.ai-call-btn {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  background: #000000;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  font-size: 22px;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s ease, background 0.2s ease;
-}
+      const workerUrl = 'https://divine-flower-a0ae.nncdecdgc.workers.dev';
 
-.ai-call-btn:hover {
-  transform: scale(1.1);
-  background: #111;
-}
+      fetch(workerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: txt,
+          savedName: localStorage.getItem('albamen_user_name'),
+          savedAge: localStorage.getItem('albamen_user_age')
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const loader = document.getElementById(loadingId);
+        if (loader) loader.remove();
 
-/* Пульсация для кнопки вызова */
-.ai-call-btn.pulse {
-  animation: call-pulse 2s infinite;
-}
+        if (data.reply) {
+          let finalReply = data.reply;
 
-@keyframes call-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
-}
+          const nameMatch = finalReply.match(/<SAVE_NAME:(.*?)>/);
+          if (nameMatch) {
+            const newName = nameMatch[1].trim();
+            localStorage.setItem('albamen_user_name', newName);
+            finalReply = finalReply.replace(nameMatch[0], '');
+            console.log("Albamen remembered name:", newName);
+          }
 
-/* =========================
-   AI PANEL (WHITE THEME)
-   ========================= */
+          const ageMatch = finalReply.match(/<SAVE_AGE:(.*?)>/);
+          if (ageMatch) {
+            const newAge = ageMatch[1].trim();
+            localStorage.setItem('albamen_user_age', newAge);
+            finalReply = finalReply.replace(ageMatch[0], '');
+          }
 
-.ai-panel-global {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 380px;
-  max-width: 90vw;
-  height: 500px;
-  max-height: 80vh;
-  
-  /* Белая тема как на скриншотах */
-  background: #ffffff;
-  color: #111827;
-  
-  border-radius: 24px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  
-  transform: translateY(20px) scale(0.95);
-  opacity: 0;
-  pointer-events: none;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
-  z-index: 1200;
-}
+          addMessage(finalReply.trim(), 'bot');
+        } else {
+          addMessage(strings.connectionError, 'bot');
+        }
+      })
+      .catch(err => {
+        console.error("AI Error:", err);
+        const loader = document.getElementById(loadingId);
+        if (loader) loader.remove();
+        addMessage(strings.connectionError, 'bot');
+      });
+    }
 
-.ai-panel-global.ai-open {
-  transform: translateY(0) scale(1);
-  opacity: 1;
-  pointer-events: auto;
-}
+    function addMessage(text, type, id = null) {
+      const div = document.createElement('div');
+      div.className = `ai-msg ${type}`;
+      div.textContent = text;
+      if (id) div.id = id;
+      msgList.appendChild(div);
+      msgList.scrollTop = msgList.scrollHeight;
+    }
 
-/* Header панели */
-.ai-panel-header {
-  display: flex;
-  justify-content: flex-end; /* Кнопки справа */
-  padding: 16px;
-  background: transparent;
-}
+    // Обработчики ввода
+    sendBtn.addEventListener('click', sendMessage);
+    inputField.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
 
-.ai-close-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #f3f4f6;
-  color: #374151;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border: none;
-  font-size: 20px;
-  transition: background 0.2s;
-}
-.ai-close-icon:hover { background: #e5e7eb; }
+    // Простая логика микрофона (заглушка для UI)
+    micBtn.addEventListener('click', () => {
+      if (!recognition) {
+        statusText.textContent = strings.voiceNotSupported;
+        statusText.style.display = 'block';
+        return;
+      }
 
-/* Body панели - Центрирование контента */
-.ai-panel-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center; /* Центрируем аватар по вертикали */
-  padding: 0 20px 20px;
-  text-align: center;
-}
+      if (isListening) {
+        recognition.stop();
+        return;
+      }
 
-/* Большой аватар в центре чата */
-.ai-chat-avatar-large {
-  width: 160px;
-  height: 160px;
-  border-radius: 50%;
-  overflow: hidden;
-  margin-bottom: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-}
-.ai-chat-avatar-large img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: optimizeQuality;
-  transform: translateZ(0);
-}
+      panel.classList.add('chat-active');
+      statusText.textContent = strings.listening;
+      statusText.style.display = 'block';
+      inputField.focus();
+      recognition.lang = isEn ? 'en-US' : 'tr-TR';
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      isListening = true;
+      recognition.start();
+    });
 
-.ai-status-text {
-  font-size: 16px;
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 30px;
-}
+    if (recognition) {
+      recognition.addEventListener('result', (event) => {
+        const transcript = Array.from(event.results)
+          .map(res => res[0].transcript)
+          .join(' ')
+          .trim();
+        if (transcript) {
+          inputField.value = transcript;
+        }
+      });
 
-/* Нижняя панель ввода (как на скриншоте) */
-.ai-input-area {
-  margin-top: auto;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #f9fafb;
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
-}
+      recognition.addEventListener('end', () => {
+        isListening = false;
+        statusText.textContent = strings.initialStatus;
+      });
 
-.ai-input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  outline: none;
-  font-size: 14px;
-  color: #1f2937;
-  padding: 4px;
-}
+      recognition.addEventListener('error', () => {
+        isListening = false;
+        statusText.textContent = strings.voiceNotSupported;
+      });
+    }
+  }
 
-.ai-action-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-}
+  // Убедиться, что виджет остаётся прикреплённым к экрану даже при подмене футера
+  function ensureAiWidgetPinned() {
+    const floating = document.getElementById('ai-floating-global');
+    if (!floating) return;
 
-.ai-mic-btn-panel {
-  background: #f3f4f6;
-  color: #111827;
-}
-.ai-mic-btn-panel:hover { background: #e5e7eb; }
+    const keepInBody = () => {
+      if (floating.parentElement !== document.body) {
+        document.body.appendChild(floating);
+      }
+      floating.classList.remove('footer-docked');
+    };
 
-.ai-send-btn-panel {
-  background: #111827; /* Черная кнопка отправки */
-  color: #fff;
-}
-.ai-send-btn-panel:hover { background: #000; }
+    keepInBody();
 
-/* Сообщения (скрыты по умолчанию, появляются при чате) */
-.ai-messages-list {
-  position: absolute;
-  top: 60px;
-  bottom: 80px;
-  left: 0;
-  right: 0;
-  padding: 10px 20px;
-  overflow-y: auto;
-  display: none; /* Покажем JS-ом при начале диалога */
-  flex-direction: column;
-  gap: 12px;
-  background: #fff;
-  z-index: 5;
-}
-.ai-panel-global.chat-active .ai-messages-list { display: flex; }
-.ai-panel-global.chat-active .ai-chat-avatar-large { display: none; } /* Скрываем большой аватар при чате */
-.ai-panel-global.chat-active .ai-status-text { display: none; }
+    // Следим за мутациями (footer может появиться позже), чтобы не сдвинуть кнопку вниз
+    const observer = new MutationObserver(() => keepInBody());
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
 
-.ai-msg {
-  padding: 10px 14px;
-  border-radius: 14px;
-  max-width: 85%;
-  font-size: 14px;
-  line-height: 1.4;
-}
-.ai-msg.user {
-  align-self: flex-end;
-  background: #111827;
-  color: #fff;
-  border-bottom-right-radius: 2px;
-}
-.ai-msg.bot {
-  align-self: flex-start;
-  background: #f3f4f6;
-  color: #1f2937;
-  border-bottom-left-radius: 2px;
-}
+  function injectVoiceWidget() {
+    const path = window.location.pathname || '/';
+    const isEn = path.startsWith('/eng/');
 
-@media (max-width: 640px) {
-  .ai-panel-global {
-    width: 94%;
-    right: 3%;
-    left: 3%;
-    bottom: 20px;
-    height: 70vh;
+    // локализованные строки
+    const t = isEn ? {
+      btnAria: 'Voice chat',
+      talkPrompt: 'Tap and Talk 🔊',
+      connecting: 'Connecting...',
+      listening: 'Listening...',
+      modalTitle: 'Let’s meet! 👋',
+      modalSubtitle: 'Albamen wants to know your name and age.',
+      namePlaceholder: 'Your name?',
+      agePlaceholder: 'Your age?',
+      cancel: 'Cancel',
+      start: 'Start 🚀',
+      stop: 'Stop',
+      error: 'Voice not supported'
+    } : {
+      btnAria: 'Sesli sohbet',
+      talkPrompt: 'Tıkla ve Konuş 🔊',
+      connecting: 'Bağlanıyor...',
+      listening: 'Dinliyorum...',
+      modalTitle: 'Tanışalım! 👋',
+      modalSubtitle: 'Albamen seninle daha iyi konuşmak için adını ve yaşını bilmek istiyor.',
+      namePlaceholder: 'Adın ne?',
+      agePlaceholder: 'Yaşın kaç?',
+      cancel: 'İptal',
+      start: 'Başla 🚀',
+      stop: 'Durdur',
+      error: 'Ses desteği yok'
+    };
+
+    // стили для голосового окна + свечения, если еще не добавлены
+    if (!document.getElementById('ai-voice-style')) {
+      const style = document.createElement('style');
+      style.id = 'ai-voice-style';
+      style.textContent = `
+        .ai-voice-btn {
+          width: 52px;
+          height: 52px;
+          border-radius: 999px;
+          background: #020617;
+          border: 2px solid rgba(148, 163, 184, 0.6);
+          color: #e5e7eb;
+          display: grid;
+          place-items: center;
+          cursor: pointer;
+          box-shadow: 0 14px 35px rgba(15, 23, 42, 0.75);
+          transition: transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+        }
+        .ai-voice-btn:hover {
+          transform: translateY(-1px) scale(1.05);
+          background: radial-gradient(circle at 30% 0%, #0ea5e9, #020617 60%);
+          border-color: rgba(56, 189, 248, 0.9);
+          box-shadow: 0 20px 40px rgba(8, 47, 73, 0.9);
+        }
+        .ai-panel-voice {
+          position: fixed;
+          right: 20px;
+          bottom: 20px;
+          width: 340px;
+          max-width: 95vw;
+          height: 360px;
+          background: #020617;
+          color: #e5e7eb;
+          border-radius: 24px;
+          box-shadow: 0 22px 55px rgba(15, 23, 42, 0.85);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          transform: translateY(18px) scale(0.96);
+          opacity: 0;
+          pointer-events: none;
+          transition: transform .26s cubic-bezier(.16,1,.3,1), opacity .26s ease;
+          z-index: 1205;
+        }
+        .ai-panel-voice.ai-open {
+          transform: translateY(0) scale(1);
+          opacity: 1;
+          pointer-events: auto;
+        }
+        .ai-panel-voice .ai-panel-body {
+          padding: 12px 14px 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          height: 100%;
+        }
+        .ai-panel-voice .ai-messages-list {
+          flex: 1;
+          overflow-y: auto;
+          font-size: 13px;
+        }
+        .ai-panel-voice .ai-status-text {
+          font-size: 12px;
+          color: #9ca3af;
+          text-align: center;
+          min-height: 18px;
+        }
+        .ai-panel-voice .ai-chat-avatar-large {
+          margin: 0 auto 4px;
+        }
+        .voice-controls {
+          margin-top: auto;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+        }
+        .voice-wave {
+          display: flex;
+          gap: 4px;
+          align-items: flex-end;
+        }
+        .voice-wave.hidden {
+          display: none !important;
+        }
+        .voice-bar {
+          width: 4px;
+          border-radius: 999px;
+          background: #22c55e;
+          animation: voiceWave 1.2s ease-in-out infinite;
+        }
+        .voice-bar:nth-child(2) { animation-delay: .12s; }
+        .voice-bar:nth-child(3) { animation-delay: .24s; }
+        @keyframes voiceWave {
+          0%,100% { height: 6px; }
+          50%     { height: 20px; }
+        }
+        .voice-stop-btn {
+          width: 34px;
+          height: 34px;
+          border-radius: 999px;
+          border: none;
+          cursor: pointer;
+          display: grid;
+          place-items: center;
+          background: #ef4444;
+          color: #fee2e2;
+          box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+          animation: pulseStop 1.4s infinite;
+        }
+        .voice-stop-btn.hidden {
+          display: none !important;
+        }
+        @keyframes pulseStop {
+          0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+          70% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .voice-auth-modal {
+          position: fixed;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(15, 23, 42, 0.82);
+          backdrop-filter: blur(6px);
+          z-index: 1300;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity .22s ease;
+        }
+        .voice-auth-modal.open {
+          opacity: 1;
+          pointer-events: auto;
+        }
+        .voice-auth-card {
+          width: 90%;
+          max-width: 320px;
+          background: radial-gradient(circle at top, #0f172a, #020617 70%);
+          border-radius: 22px;
+          padding: 18px 18px 16px;
+          box-shadow: 0 22px 45px rgba(15, 23, 42, 0.9);
+          color: #e5e7eb;
+          text-align: center;
+          border: 1px solid rgba(148, 163, 184, 0.5);
+        }
+        .voice-auth-card h3 {
+          font-size: 18px;
+          margin-bottom: 4px;
+        }
+        .voice-auth-card p {
+          font-size: 13px;
+          color: #9ca3af;
+          margin-bottom: 10px;
+        }
+        .voice-auth-card input {
+          width: 100%;
+          padding: 9px 10px;
+          margin-bottom: 8px;
+          border-radius: 10px;
+          border: 1px solid rgba(148, 163, 184, 0.8);
+          background: #020617;
+          color: #e5e7eb;
+          font-size: 13px;
+        }
+        .voice-auth-actions {
+          display: flex;
+          gap: 8px;
+          margin-top: 6px;
+        }
+        .voice-auth-actions button {
+          flex: 1;
+          padding: 8px 0;
+          border-radius: 999px;
+          border: none;
+          cursor: pointer;
+          font-size: 13px;
+        }
+        .voice-auth-actions button:first-child {
+          background: #475569;
+          color: #e5e7eb;
+        }
+        .voice-auth-actions button:last-child {
+          background: #2563eb;
+          color: #dbeafe;
+        }
+        .ai-glow {
+          box-shadow: 0 0 14px rgba(56, 189, 248, 0.8), 0 0 32px rgba(59, 130, 246, 0.8);
+          animation: aiGlow 1.2s ease-in-out infinite;
+        }
+        @keyframes aiGlow {
+          0%,100% {
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.7), 0 0 24px rgba(56, 189, 248, 0.5);
+          }
+          50% {
+            box-shadow: 0 0 24px rgba(56, 189, 248, 1), 0 0 42px rgba(37, 99, 235, 0.9);
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // проверяем, не создан ли виджет ранее
+    if (document.getElementById('ai-voice-btn')) return;
+    const floating = document.getElementById('ai-floating-global');
+    if (!floating) return;
+
+    const avatarSrc = '/assets/images/albamenai.jpg';
+
+    // кнопка на плавающем блоке
+    const voiceBtn = document.createElement('button');
+    voiceBtn.className = 'ai-voice-btn';
+    voiceBtn.id = 'ai-voice-btn';
+    voiceBtn.setAttribute('aria-label', t.btnAria);
+    voiceBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>';
+    floating.appendChild(voiceBtn);
+
+    // панель голосового чата
+    const voicePanel = document.createElement('div');
+    voicePanel.id = 'ai-panel-voice';
+    voicePanel.className = 'ai-panel-voice';
+    voicePanel.innerHTML = `
+      <div class="ai-panel-header">
+        <button class="ai-close-icon" id="ai-voice-close-btn">×</button>
+      </div>
+      <div class="ai-panel-body">
+        <div class="ai-messages-list" id="voice-messages-list"></div>
+        <div class="ai-chat-avatar-large"><img src="${avatarSrc}" alt="Albamen"></div>
+        <div class="ai-status-text" id="voice-status-text">${t.talkPrompt}</div>
+        <div class="voice-controls">
+          <div class="voice-wave hidden" id="voice-wave">
+            <div class="voice-bar"></div>
+            <div class="voice-bar"></div>
+            <div class="voice-bar"></div>
+          </div>
+          <button class="voice-stop-btn hidden" id="voice-stop-btn">■</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(voicePanel);
+
+    // модальное окно для имени/возраста
+    const authModal = document.createElement('div');
+    authModal.id = 'voice-auth-modal';
+    authModal.className = 'voice-auth-modal';
+    authModal.innerHTML = `
+      <div class="voice-auth-card">
+        <h3>${t.modalTitle}</h3>
+        <p>${t.modalSubtitle}</p>
+        <input type="text" id="voice-user-name" placeholder="${t.namePlaceholder}">
+        <input type="number" id="voice-user-age" placeholder="${t.agePlaceholder}">
+        <div class="voice-auth-actions">
+          <button id="voice-auth-cancel">${t.cancel}</button>
+          <button id="voice-auth-start">${t.start}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(authModal);
+
+    // ссылки на элементы
+    const messages = document.getElementById('voice-messages-list');
+    const status   = document.getElementById('voice-status-text');
+    const wave     = document.getElementById('voice-wave');
+    const stopBtn  = document.getElementById('voice-stop-btn');
+    const closeBtn = document.getElementById('ai-voice-close-btn');
+    const nameInput= document.getElementById('voice-user-name');
+    const ageInput = document.getElementById('voice-user-age');
+    const cancelBtn= document.getElementById('voice-auth-cancel');
+    const startBtn = document.getElementById('voice-auth-start');
+    const avatarTrigger = document.getElementById('ai-avatar-trigger');
+
+    let audioContext = null;
+    let websocket    = null;
+    let processor    = null;
+    let inputSource  = null;
+    let isVoiceActive = false;
+
+    voiceBtn.addEventListener('click', () => {
+      voicePanel.classList.add('ai-open');
+      if (!localStorage.getItem('albamen_user_name')) {
+        showAuthModal();
+      } else {
+        startVoiceChat();
+      }
+    });
+
+    closeBtn.addEventListener('click', () => {
+      voicePanel.classList.remove('ai-open');
+      stopVoiceChat();
+    });
+
+    cancelBtn.addEventListener('click', hideAuthModal);
+    startBtn.addEventListener('click', () => {
+      const nm = nameInput.value.trim();
+      const ag = ageInput.value.trim();
+      if (nm) localStorage.setItem('albamen_user_name', nm);
+      if (ag) localStorage.setItem('albamen_user_age', ag);
+      hideAuthModal();
+      startVoiceChat();
+    });
+
+    stopBtn.addEventListener('click', stopVoiceChat);
+
+    function showAuthModal() { authModal.classList.add('open'); }
+    function hideAuthModal() { authModal.classList.remove('open'); }
+
+    function startVoiceChat() {
+      if (isVoiceActive) return;
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        status.textContent = t.error;
+        return;
+      }
+      status.textContent = t.connecting;
+      wave.classList.remove('hidden');
+      stopBtn.classList.remove('hidden');
+
+      const savedName = localStorage.getItem('albamen_user_name') || '';
+      const savedAge  = localStorage.getItem('albamen_user_age') || '';
+      const wsUrl = 'wss://albamen-voice.nncdecdgc.workers.dev'
+        + '?name=' + encodeURIComponent(savedName)
+        + '&age=' + encodeURIComponent(savedAge);
+
+      audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+      websocket = new WebSocket(wsUrl);
+
+      websocket.onopen = async () => {
+        isVoiceActive = true;
+        status.textContent = t.listening;
+        await startMicrophone();
+      };
+      websocket.onclose = stopVoiceChat;
+      websocket.onerror = stopVoiceChat;
+      websocket.onmessage = (ev) => {
+        try {
+          const data = JSON.parse(ev.data);
+          if (data.serverContent && data.serverContent.modelTurn && data.serverContent.modelTurn.parts) {
+            for (const part of data.serverContent.modelTurn.parts) {
+              if (part.text) {
+                let reply = part.text;
+                // обрабатываем теги сохранения
+                const n1 = reply.match(/<SAVE_NAME:(.*?)>/i);
+                if (n1) {
+                  localStorage.setItem('albamen_user_name', n1[1].trim());
+                  reply = reply.replace(n1[0], '');
+                }
+                const n2 = reply.match(/<SAVENAME:(.*?)>/i);
+                if (n2) {
+                  localStorage.setItem('albamen_user_name', n2[1].trim());
+                  reply = reply.replace(n2[0], '');
+                }
+                const a1 = reply.match(/<SAVE_AGE:(.*?)>/i);
+                if (a1) {
+                  localStorage.setItem('albamen_user_age', a1[1].trim());
+                  reply = reply.replace(a1[0], '');
+                }
+                const a2 = reply.match(/<SAVEAGE:(.*?)>/i);
+                if (a2) {
+                  localStorage.setItem('albamen_user_age', a2[1].trim());
+                  reply = reply.replace(a2[0], '');
+                }
+                if (reply.trim()) addVoiceMessage(reply.trim());
+              }
+              if (part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.indexOf('audio/') === 0) {
+                playAudioChunk(part.inlineData.data);
+              }
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      };
+    }
+
+    async function startMicrophone() {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, sampleRate: 24000 }
+      });
+      inputSource = audioContext.createMediaStreamSource(stream);
+      processor = audioContext.createScriptProcessor(4096, 1, 1);
+      processor.onaudioprocess = (e) => {
+        if (!websocket || websocket.readyState !== WebSocket.OPEN) return;
+        const inputData = e.inputBuffer.getChannelData(0);
+        const pcm16 = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+          const s = Math.max(-1, Math.min(1, inputData[i]));
+          pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+        const bytes = new Uint8Array(pcm16.buffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const base64Audio = btoa(binary);
+        websocket.send(JSON.stringify({
+          realtime_input: { media_chunks: [{ mime_type: 'audio/pcm', data: base64Audio }] }
+        }));
+      };
+      inputSource.connect(processor);
+      processor.connect(audioContext.destination);
+    }
+
+    function stopVoiceChat() {
+      if (!isVoiceActive && !audioContext && !websocket) return;
+      isVoiceActive = false;
+      try { if (websocket) websocket.close(); } catch (e) {}
+      try { if (processor) processor.disconnect(); } catch (e) {}
+      try { if (inputSource) inputSource.disconnect(); } catch (e) {}
+      try { if (audioContext) audioContext.close(); } catch (e) {}
+      wave.classList.add('hidden');
+      stopBtn.classList.add('hidden');
+      status.textContent = t.talkPrompt;
+    }
+
+    function addVoiceMessage(text) {
+      const div = document.createElement('div');
+      div.className = 'ai-msg bot';
+      div.textContent = text;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function playAudioChunk(base64String) {
+      if (!audioContext) return;
+      const binaryString = atob(base64String);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const int16Data = new Int16Array(bytes.buffer);
+      const float32Data = new Float32Array(int16Data.length);
+      for (let i = 0; i < int16Data.length; i++) {
+        float32Data[i] = int16Data[i] / 32768.0;
+      }
+      const buffer = audioContext.createBuffer(1, float32Data.length, 24000);
+      buffer.getChannelData(0).set(float32Data);
+      const source = audioContext.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audioContext.destination);
+
+      // включаем свечение аватара на время воспроизведения
+      const bigAvatar = voicePanel.querySelector('.ai-chat-avatar-large');
+      if (avatarTrigger) avatarTrigger.classList.add('ai-glow');
+      if (bigAvatar) bigAvatar.classList.add('ai-glow');
+
+      source.onended = () => {
+        if (avatarTrigger) avatarTrigger.classList.remove('ai-glow');
+        if (bigAvatar) bigAvatar.classList.remove('ai-glow');
+      };
+      source.start(0);
+    }
+  }
+}); // END runAfterDomReady
+
+// -------------------- HELPER FUNCTIONS --------------------
+
+// Вызывает функцию, когда DOM готов (или сразу, если уже готов)
+function runAfterDomReady(fn) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fn, { once: true });
+  } else {
+    fn();
   }
 }
 
-/* Flag buttons same size as social icons */
-.top-lang-switch .lang-flag{
-  width:22px;
-  height:22px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  padding:0;
-  border-radius:6px;
-  border:none;
-  background:transparent;
-  text-decoration:none;
-  transition:transform 0.15s,filter 0.2s;
+// ================= MODEL VIEWER LOADER =================
+function injectModelViewerStyles() {
+  if (document.getElementById("albaspace-model-viewer-styles")) return;
+
+  const style = document.createElement("style");
+  style.id = "albaspace-model-viewer-styles";
+  style.textContent = `
+    model-viewer {
+      width: 100%;
+      height: 600px;
+      margin-top: 30px;
+      background: rgba(0, 0, 0, 0.65);
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(0, 150, 255, 0.5);
+      display: block;
+    }
+
+    @media (max-width: 768px) {
+      model-viewer {
+        height: 420px;
+        margin-top: 20px;
+      }
+    }
+
+    /* Ensure model-viewer is visible and interactive */
+    model-viewer[ar-status="session-started"] {
+      display: block !important;
+    }
+
+    /* Loading state */
+    model-viewer::part(default-progress-bar) {
+      background: linear-gradient(90deg, #00b4ff, #00e5ff);
+    }
+  `;
+  document.head.appendChild(style);
 }
 
-.top-lang-switch .lang-flag:hover{
-  transform:scale(1.05);
-}
+function ensureModelViewerLoaded() {
+  // Первый вариант: проверяем наличие model-viewer элемента
+  const hasModelViewer = !!document.querySelector("model-viewer");
 
-.top-lang-switch .lang-flag svg{
-  width:100%;
-  height:100%;
-  display:block;
-}
+  if (!hasModelViewer) return;
 
-.top-lang-switch .lang-flag img{
-  width:100%;
-  height:100%;
-  display:block;
-}
-
-.top-lang-switch .lang-flag.active{
-  background:transparent;
-  border-color:transparent;
-}
-
-/* === Voice Chat Widget === */
-.ai-voice-btn {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  background: #000000;
-  border: 2px solid rgba(255,255,255,0.1);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
-  transition: transform .2s ease, background .2s ease;
-}
-.ai-voice-btn:hover { transform: scale(1.1); background:#111; }
-
-.ai-panel-voice {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 360px;
-  max-width: 90vw;
-  height: 380px;
-  background:#ffffff;
-  color:#111827;
-  border-radius:24px;
-  box-shadow:0 20px 50px rgba(0,0,0,0.5);
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-  transform: translateY(20px) scale(.95);
-  opacity:0;
-  pointer-events:none;
-  transition: transform .3s cubic-bezier(.16,1,.3,1), opacity .3s ease;
-  z-index:1210;
-}
-.ai-panel-voice.ai-open { transform:translateY(0) scale(1); opacity:1; pointer-events:auto; }
-
-.ai-panel-voice .voice-controls {
-  margin-top: auto;
-  width:100%;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  gap:12px;
-  padding:12px;
-}
-
-.voice-wave {
-  display:flex;
-  gap:4px;
-  align-items:flex-end;
-}
-.voice-bar {
-  width:4px;
-  background:#34d399;
-  border-radius:2px;
-  animation: voiceWave 1.2s infinite ease-in-out;
-}
-.voice-bar:nth-child(2){ animation-delay: .15s; }
-.voice-bar:nth-child(3){ animation-delay: .3s; }
-@keyframes voiceWave {
-  0%,100% { height:6px; }
-  50%     { height:18px; }
-}
-
-.voice-stop-btn {
-  width:36px;
-  height:36px;
-  border-radius:50%;
-  background:#ef4444;
-  color:#fff;
-  border:none;
-  cursor:pointer;
-}
-.voice-stop-btn.hidden { display:none; }
-
-/* модальное окно ввода имени/возраста */
-.voice-auth-modal {
-  position:fixed;
-  inset:0;
-  z-index:1300;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:rgba(0,0,0,0.7);
-  backdrop-filter: blur(4px);
-  opacity:0;
-  pointer-events:none;
-  transition: opacity .25s ease;
-}
-.voice-auth-modal.open { opacity:1; pointer-events:auto; }
-.voice-auth-card {
-  background:#1e293b;
-  color:#fff;
-  padding:20px;
-  border-radius:20px;
-  width:90%;
-  max-width:320px;
-  text-align:center;
-  box-shadow:0 20px 40px rgba(0,0,0,0.5);
-}
-.voice-auth-card input {
-  width:100%;
-  margin:8px 0;
-  padding:10px;
-  border-radius:8px;
-  border:1px solid #334155;
-  background:#0f172a;
-  color:#e2e8f0;
-}
-.voice-auth-actions {
-  display:flex;
-  gap:10px;
-  margin-top:14px;
-}
-.voice-auth-actions button {
-  flex:1;
-  padding:10px;
-  border-radius:8px;
-  cursor:pointer;
-  border:none;
-}
-.voice-auth-actions button:first-child {
-  background:#475569;
-  color:#fff;
-}
-.voice-auth-actions button:last-child {
-  background:#2563eb;
-  color:#fff;
-}
-.voice-auth-actions button:last-child:hover { background:#1d4ed8; }
-
-/* свечение аватара при озвучивании */
-.ai-glow {
-  animation: aiGlow 1.6s ease-in-out infinite;
-}
-@keyframes aiGlow {
-  0%,100% { box-shadow: 0 0 12px rgba(56,189,248,0.5); }
-  50%    { box-shadow: 0 0 28px rgba(56,189,248,0.9); }
-}
-
-
-
-
-/* =========================
-   ОБЩИЕ КЛАССЫ СТРАНИЦ
-   (используются, например, на İletişim)
-   ========================= */
-
-.page-wrapper{
-  max-width:900px;
-  margin:50px auto 70px;
-  padding:0 20px;
-  text-align:center;
-}
-
-.page-wrapper img.hero{
-  max-width:420px;
-  width:100%;
-  border-radius:20px;
-  margin-bottom:24px;
-  box-shadow:0 8px 26px rgba(0,0,0,0.28);
-}
-
-.page-title{
-  font-size:32px;
-  margin-bottom:6px;
-}
-
-.page-sub{
-  font-size:14px;
-  color:#4b5563;
-  margin-bottom:24px;
-}
-
-.coming-title{
-  font-size:42px;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:2px;
-}
-
-/* =========================
-   FOOTER
-   ========================= */
-
-footer.footer{
-  background:#111827;
-  color:#d1d5db;
-  padding:26px 20px;
-  font-size:13px;
-}
-
-.footer-right{
-  display:grid;
-  gap:18px;
-  align-content:start;
-}
-
-.footer-grid{
-  max-width:1200px;
-  margin:0 auto;
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:20px;
-  align-items:start;
-  text-align:left;
-}
-
-.footer-logo{
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-
-.footer-logo img{
-  width:64px;
-  height:64px;
-  border-radius:999px;
-  background:#0f172a;
-  padding:6px;
-}
-
-.footer-logo p{
-  margin:0;
-  font-weight:600;
-  font-size:15px;
-  color:#e5e7eb;
-}
-
-/* соцсети в футере (PNG) */
-.footer-social{
-  display:flex;
-  justify-content:flex-start;
-  gap:12px;
-  margin-bottom:6px;
-  align-items:center;
-}
-
-.footer-social img{
-  width:20px;
-  height:20px;
-  display:block;
-  border-radius:6px;
-  transition:transform .15s,filter .2s, box-shadow .18s;
-}
-
-.footer-social a:hover img{
-  box-shadow:0 6px 18px rgba(0,0,0,0.45), 0 0 12px rgba(0,194,255,0.06);
-}
-
-/* Ensure larger footer social variants have a reasonable size (fix tiny icons on some pages) */
-.footer-social.footer-social--xl img,
-.footer-social.vertical.footer-social--xl img,
-.footer-social--xl img{
-  width:49.5px; /* consistent large size for --xl variants */
-  height:49.5px;
-  border-radius:10.5px;
-}
-
-.footer-social a:hover img{
-  transform:translateY(-1px);
-  filter:brightness(1.2);
-}
-
-.footer-social--grid{
-  display:grid;
-  gap:12px 14px;
-}
-
-.footer-address p,
-.footer-center p{
-  margin:2px 0;
-}
-
-/* Footer action buttons (4 boxes on the right) */
-.footer-actions{
-  display:grid;
-  grid-template-columns:repeat(2, minmax(0,1fr));
-  gap:12px;
-  align-items:start;
-}
-
-.footer-action{
-  display:block;
-  padding:10px 12px;
-  border-radius:10px;
-  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  color:inherit;
-  text-decoration:none;
-  border:1px solid rgba(255,255,255,0.03);
-}
-
-.footer-action__title{ display:block; font-size:12px; color:#9ca3af; font-weight:600 }
-.footer-action__value{ display:block; font-size:14px; color:#e5e7eb; font-weight:700 }
-.footer-action__hint{ display:block; font-size:12px; color:#9ca3af }
-
-/* Hover / focus for actions */
-.footer-action:hover{ transform:translateY(-4px); box-shadow:0 10px 28px rgba(0,0,0,0.40); }
-
-/* =========================
-   FOOTER: MOBILE ADJUSTMENTS
-   ========================= */
-@media (max-width:768px){
-  .footer-grid{
-    grid-template-columns:1fr;
-    text-align:center;
-    gap:14px;
-    justify-items:center;
+  // Если custom element уже зарегистрирован - ничего не делаем
+  if (window.customElements && window.customElements.get("model-viewer")) {
+    return;
   }
 
-  .footer-logo{ justify-content:center; }
-  .footer-logo img{ width:52px; height:52px; padding:4px }
-  .footer-logo p{ font-size:14px }
+  // Вариант 1: Пытаемся загрузить из Google CDN (основной)
+  const googleSrc = "https://ajax.googleapis.com/ajax/libs/model-viewer/3.0.0/model-viewer.min.js";
 
-  .footer-social{ justify-content:center; gap:16px }
-  .footer-social img{ width:84px; height:84px; border-radius:24px }
+  // Вариант 2: Резервный источник
+  const fallbackSrc = "https://unpkg.com/@google/model-viewer@3.0.0/dist/model-viewer.min.js";
 
-  .footer-actions{
-    grid-template-columns:1fr;
-    gap:10px;
+  // Проверяем, что скрипт еще не загружается
+  const existingGoogleScript = document.querySelector(`script[src="${googleSrc}"]`);
+  const existingFallbackScript = document.querySelector(`script[src="${fallbackSrc}"]`);
+
+  if (existingGoogleScript || existingFallbackScript) {
+    return;
   }
-  .footer-action{ padding:14px 16px; text-align:center }
-  .footer-action__title{ font-size:13px }
-  .footer-action__value{ font-size:15px }
 
-  footer.footer{ padding:22px 12px }
+  // Пытаемся загрузить с основного CDN
+  const loadModelViewer = () => {
+    if (window.customElements && window.customElements.get("model-viewer")) {
+      return; // Успешно загружен
+    }
+
+    const script = document.createElement("script");
+    script.type = "module";
+
+    // Сначала пытаемся основной CDN
+    script.src = googleSrc;
+
+    // Если основной CDN не работает, переключаемся на резервный
+    script.onerror = () => {
+      if (window.customElements && window.customElements.get("model-viewer")) {
+        return;
+      }
+
+      const fallbackScript = document.createElement("script");
+      fallbackScript.type = "module";
+      fallbackScript.src = fallbackSrc;
+      document.head.appendChild(fallbackScript);
+    };
+
+    document.head.appendChild(script);
+  };
+
+  // Даем время на загрузку главного скрипта в head
+  setTimeout(loadModelViewer, 800);
+
+  // На всякий случай - финальная проверка через 3 секунды
+  setTimeout(() => {
+    if (!window.customElements || !window.customElements.get("model-viewer")) {
+      const fallbackScript = document.createElement("script");
+      fallbackScript.type = "module";
+      fallbackScript.src = fallbackSrc;
+      fallbackScript.async = true;
+      document.head.appendChild(fallbackScript);
+    }
+  }, 3000);
 }
 
-/* FOOTER TR: mobile centering and vertical socials */
-@media (max-width:768px){
-  .footer--tr .footer-right{
-    width:100%;
-    justify-items:center;
-  }
-  .footer--tr .footer-logo{
-    align-items:center;
-    text-align:center;
-  }
-  .footer--tr .footer-social--grid{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-  }
-  .footer--tr .footer-actions{
-    width:100%;
-    grid-template-columns:1fr;
+function createPreloaderLoader() {
+  let loaded = false;
+
+  return function ensurePreloaderScript() {
+    if (loaded) return;
+
+    const preloader = document.getElementById("preloader");
+    if (!preloader) return;
+
+    const existing = document.querySelector("script[data-preloader-loader]");
+    if (existing) {
+      loaded = true;
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "/assets/js/preloader.js";
+    script.defer = true;
+    script.dataset.preloaderLoader = "true";
+    document.head.appendChild(script);
+    loaded = true;
+  };
+}
+
+function createModelPreloaderLoader() {
+  let loaded = false;
+
+  return function ensureModelPreloader() {
+    if (loaded) return;
+    const hasViewer = !!document.querySelector('model-viewer');
+    if (!hasViewer) return;
+
+    const existing = document.querySelector('script[data-model-preloader]');
+    if (existing) {
+      loaded = true;
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = '/assets/js/model-preloader.js';
+    script.defer = true;
+    script.dataset.modelPreloader = 'true';
+    document.head.appendChild(script);
+    loaded = true;
+  };
+}
+
+function createModelNavLoader() {
+  let loaded = false;
+
+  return function ensureModelNavLoader() {
+    if (loaded) return;
+
+    const existing = document.querySelector('script[data-model-nav-loader]');
+    if (existing) { loaded = true; return; }
+
+    const script = document.createElement('script');
+    script.src = '/assets/js/model-nav-loader.js';
+    script.defer = true;
+    script.dataset.modelNavLoader = 'true';
+    document.head.appendChild(script);
+    loaded = true;
+  };
+}
+
+// ================= NAV =================
+function markActiveNav() {
+  const path = normalizePath(window.location.pathname || "/");
+  const navLinks = document.querySelectorAll(".main-nav a");
+  let matched = false;
+
+  navLinks.forEach((a) => {
+    const href = a.getAttribute("href");
+    if (!href) return;
+
+    try {
+      const linkPath = normalizePath(new URL(href, window.location.origin).pathname);
+      if (linkPath === path) {
+        a.classList.add("active");
+        matched = true;
+      }
+    } catch (e) {
+      if (href && path.endsWith(href)) {
+        a.classList.add("active");
+        matched = true;
+      }
+    }
+  });
+
+  if (!matched) {
+    navLinks.forEach((a) => {
+      const text = (a.textContent || "").trim().toUpperCase();
+      if (text.includes("ATLAS")) a.classList.add("active");
+    });
   }
 }
 
-/* Desktop: move footer action buttons into a single horizontal row on larger screens */
-@media (min-width:769px){
-  .footer-grid{
-    align-items:center;
-  }
-  .footer--tr .footer-right{
-    justify-items:end;
-  }
-  .footer--tr .footer-social--grid{
-    grid-template-columns:repeat(2, auto);
-    justify-items:end;
-  }
-  .footer--tr .footer-actions{
-    display:grid;
-    grid-template-columns:repeat(2, minmax(0,1fr));
-    width:100%;
-    max-width:640px;
-  }
-  .footer-actions{
-    display:flex;
-    flex-direction:row;
-    gap:16px;
-    align-items:center;
-    justify-content:flex-end; /* right-align actions inside their grid cell */
-    width:100%;
-    grid-template-columns:none;
-  }
-  .footer-action{ padding:10px 14px; }
+function normalizePath(p) {
+  if (!p || p === "/") return "/index.html";
+  if (!p.endsWith(".html") && !p.endsWith("/")) return p + "/";
+  return p;
 }
 
-/* =========================
-   MODEL TITLE NAV BUTTONS (NEON)
-   ========================= */
+// ================= LANG =================
+function setupLangSwitch() {
+  const path = window.location.pathname || "/";
+  const isEn = path.startsWith("/eng/");
+  const currentLang = isEn ? "en" : "tr";
 
-/* Wrapper inserted around model H1 to host neon nav buttons */
-.model-title-wrap{
-  position:relative;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:24px;
-  margin: 18px auto 8px;
+  const container = document.querySelector(".top-lang-switch");
+  if (!container) return;
+
+  container.querySelectorAll("[data-lang]").forEach((btn) => {
+    const lang = btn.getAttribute("data-lang");
+    btn.classList.toggle("active", lang === currentLang);
+
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (lang === currentLang) return;
+
+      const targetPath = lang === "en" ? toEnPath(path) : toTrPath(path);
+      window.location.href = targetPath;
+    });
+  });
 }
 
-/* The neon nav container (buttons positioned left/right of title) */
-.model-nav__btn{
-  --neon: #00c2ff;
-  --size: 48px;
-  width:var(--size);
-  height:var(--size);
-  display:inline-grid;
-  place-items:center;
-  border-radius:999px;
-  background:linear-gradient(180deg, rgba(0,194,255,0.12), rgba(0,194,255,0.06));
-  color:var(--neon);
-  font-size:20px;
-  border:1px solid rgba(0,194,255,0.18);
-  box-shadow:0 6px 20px rgba(0,194,255,0.12), 0 0 18px rgba(0,194,255,0.06) inset;
-  cursor:pointer;
-  transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;
-  position:relative;
-  z-index:5;
-  pointer-events:auto;
+function toEnPath(path) {
+  path = normalizePath(path);
+  if (path.startsWith("/eng/")) return path;
+  if (path === "/index.html") return "/eng/index.html";
+  return "/eng" + (path.startsWith("/") ? path : "/" + path);
 }
 
-/* Neon glow using pseudo-element */
-.model-nav__btn::after{
-  content:'';
-  position:absolute;
-  inset: -8px;
-  border-radius:inherit;
-  background: radial-gradient(circle at 50% 30%, rgba(0,194,255,0.28), transparent 40%);
-  filter: blur(8px);
-  opacity:0.9;
-  transition:opacity .18s ease, transform .18s ease;
-  z-index:-1;
+function toTrPath(path) {
+  path = normalizePath(path);
+  if (!path.startsWith("/eng/")) return path;
+  return path.replace(/^\/eng/, "") || "/index.html";
 }
 
-.model-nav__btn:hover{
-  transform:translateY(-4px) scale(1.03);
-  box-shadow:0 12px 36px rgba(0,194,255,0.26), 0 0 28px rgba(0,194,255,0.12) inset;
-}
+// ================= FOOTER ENHANCER =================
+function enhanceFooter(root) {
+  injectFooterStyles();
 
-/* subtle pulsing animation */
-@keyframes neonPulse{ 0%{ transform:scale(1); opacity:0.95 } 50%{ transform:scale(1.04); opacity:1 } 100%{ transform:scale(1); opacity:0.95 } }
-.model-nav__btn.pulse{ animation:neonPulse 2.2s ease-in-out infinite; }
+  const footer = root.querySelector("footer");
+  if (!footer || footer.classList.contains("alba-footer-v5")) return;
+  footer.classList.add("alba-footer-v5");
 
-/* position helpers when title is narrow/wide */
-.model-title-wrap .model-nav__btn.prev{ margin-right:8px; }
-.model-title-wrap .model-nav__btn.next{ margin-left:8px; }
-
-/* Accessibility: focus style */
-.model-nav__btn:focus{ outline:none; box-shadow:0 0 0 3px rgba(0,194,255,0.14), 0 10px 28px rgba(0,194,255,0.18); }
-
-@media (max-width:768px){
-  .model-nav__btn{ --size:40px; font-size:18px }
-  .model-title-wrap{ gap:12px; margin-top:12px }
-}
-
-/* =========================
-   BURGER MENU
-   ========================= */
-
-/* Кнопка бургер-меню — на десктопе скрыта */
-.menu-toggle{
-  display:none;
-  position:relative;
-  margin-left:auto;
-  width:72px;
-  height:32px;
-  border-radius:999px;
-  border:1px solid rgba(56,189,248,0.7);
-  background:
-    radial-gradient(circle at 0% 0%, rgba(56,189,248,0.25), transparent 55%),
-    radial-gradient(circle at 100% 100%, rgba(14,165,233,0.2), transparent 55%),
-    #020617;
-  box-shadow:0 0 18px rgba(56,189,248,0.6);
-  cursor:pointer;
-  padding:0 10px;
-  outline:none;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  animation:burgerGlow 2.4s ease-in-out infinite;
-}
-
-/* Светящаяся надпись MENU */
-.menu-toggle .menu-label{
-  font-size:11px;
-  letter-spacing:.24em;
-  text-transform:uppercase;
-  color:#e0f2fe;
-  text-shadow:
-    0 0 6px rgba(56,189,248,0.9),
-    0 0 12px rgba(56,189,248,0.7);
-  white-space:nowrap;
-}
-
-/* В открытом состоянии можно чуть усилить свечение */
-.menu-toggle.is-open{
-  box-shadow:
-    0 0 20px rgba(56,189,248,1),
-    0 0 40px rgba(56,189,248,0.7);
-}
-
-/* Пульсация свечения */
-@keyframes burgerGlow{
-  0%,100%{
-    box-shadow:
-      0 0 12px rgba(56,189,248,0.6),
-      0 0 32px rgba(56,189,248,0.25);
-  }
-  50%{
-    box-shadow:
-      0 0 20px rgba(56,189,248,0.95),
-      0 0 48px rgba(56,189,248,0.5);
-  }
-}
-
-/* =========================
-   МОБИЛЬНАЯ ВЕРСИЯ
-   ========================= */
-
-@media (max-width:768px){
-  /* Показываем кнопку меню только на мобильных */
-  .menu-toggle{
-    display:flex !important;
-    z-index:1002;
+  const allowCallSquare = /\/hizmetler(\.html)?\/?$/i.test(
+    window.location.pathname || ""
+  );
+  if (!allowCallSquare) {
+    footer.querySelectorAll(".alba-call-square").forEach((el) => el.remove());
   }
 
-  /* На мобильных меню скрыто по умолчанию; выезжает справа и занимает 1/3 ширины */
-  .main-nav{
-    display:none;
-    position:absolute;
-    top:calc(100% + 10px);
-    right:12px;
-    left:auto;
-    width:33vw;
-    max-width:420px;
-    min-width:220px;
-    background:#020617;
-    border:1px solid rgba(15,23,42,0.8);
-    border-radius:10px;
-    box-shadow:0 18px 45px rgba(56,189,248,0.25);
-    flex-direction:column;
-    gap:0;
-    flex:none;
-    justify-content:flex-start;
-    margin:0;
-    padding:8px 0;
-    flex-wrap:nowrap;
-    z-index:1001;
-    overflow:hidden;
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
-  }
+  const socials =
+    footer.querySelector(".social-icons") ||
+    footer.querySelector(".footer-socials") ||
+    footer.querySelector("[data-socials]");
+  if (socials) socials.classList.add("alba-footer-socials");
 
-  /* Показываем меню когда оно открыто; добавляем статическое свечение, похожее на кнопки */
-  .main-nav.nav-open{
-    display:flex;
-    box-shadow:
-      0 12px 34px rgba(56,189,248,0.6),
-      0 0 40px rgba(56,189,248,0.18) inset;
-    border-color: rgba(56,189,248,0.35);
-  }
+  // Modified: prioritize .footer-actions before .footer-right to avoid clearing social icons
+  const addressContainer =
+    footer.querySelector(".footer-actions") ||
+    footer.querySelector(".footer-right") ||
+    footer.querySelector(".footer-address") ||
+    footer.querySelector(".footer-contact") ||
+    footer.querySelector("[data-footer-address]");
 
-  /* Меню пункты на мобильных */
-  .main-nav a{
-    padding:12px 18px;
-    font-size:14px;
-    display:block;
-    border-bottom:1px solid rgba(15,23,42,0.6);
-    color:var(--text-main);
-  }
+  if (!addressContainer) return;
 
-  .main-nav a:last-child{
-    border-bottom:none;
-  }
+  const rawAddrText = (addressContainer.innerText || "").trim();
+  if (!rawAddrText) return;
 
-  /* Социальные иконки остаются видимыми на мобильных */
-  .header-social{
-    display:flex !important;
-    margin-left:auto;
-    gap:10px;
-    align-items:center;
-  }
+  const merkezBlock = extractSection(rawAddrText, /Merkez Ofis/i, /Adana Şube/i);
+  const adanaBlock = extractSection(rawAddrText, /Adana Şube/i, null);
 
-  .header-social img{
-    width:20px;
-    height:20px;
-  }
+  const phoneRaw = findPhone(rawAddrText) || findPhone(footer.innerText || "");
+  const phoneTel = phoneRaw ? phoneRaw.replace(/[^\d+]/g, "") : "";
 
-  /* Переключатель языков остаётся видимым */
-  .top-lang-switch{
-    order:10;
-    margin-left:auto;
-  }
+  const mailAnchors = footer.querySelectorAll('a[href^="mailto:"]');
+  mailAnchors.forEach((el) => el.remove());
 
-  /* Хедер на мобильных */
-  .header-inner{
-    flex-wrap:wrap;
-    gap:10px;
-  }
+  const contactPanel = document.createElement('div');
+  contactPanel.className = 'alba-footer-contact-panel';
 
-  /* Логотип */
-  .header-logo{
-    flex-shrink:0;
-  }
+  const phoneBtn = document.createElement('a');
+  phoneBtn.className = 'alba-footer-action';
+  phoneBtn.href = 'tel:+9053877818';
+  phoneBtn.innerHTML = `
+    <div class="action-row">
+      <span class="action-icon">☎</span>
+      <span class="action-text">+90 538 778 18</span>
+    </div>
+    <div class="action-hint alba-blink">Aramak için dokunun</div>
+  `;
+  contactPanel.appendChild(phoneBtn);
 
-  /* Кнопка меню на мобильных */
-  .menu-toggle{
-    margin-left:auto;
-    margin-right:0;
-  }
+  const emailBtn = document.createElement('a');
+  emailBtn.className = 'alba-footer-action';
+  emailBtn.href = 'mailto:hello@albaspace.com.tr';
+  emailBtn.innerHTML = `
+    <div class="action-row">
+      <span class="action-icon">✉</span>
+      <span class="action-text">hello@albaspace.com.tr</span>
+    </div>
+    <div class="action-hint alba-blink">Bize yazın</div>
+  `;
+  contactPanel.appendChild(emailBtn);
+
+  const map1 = buildMapButton(merkezBlock);
+  const map2 = buildMapButton(adanaBlock);
+  if (map1) contactPanel.appendChild(map1);
+  if (map2) contactPanel.appendChild(map2);
+
+  addressContainer.innerHTML = '';
+  addressContainer.style.display = 'flex';
+  addressContainer.style.flexDirection = 'column';
+  addressContainer.style.alignItems = 'center';
+  addressContainer.style.justifyContent = 'center';
+  addressContainer.style.width = '100%';
+  addressContainer.style.margin = '0 auto';
+  addressContainer.appendChild(contactPanel);
 }
 
-/* Явно скрываем кнопку MENU на десктопах, чтобы не было конфликтов */
-@media (min-width:769px){
-  .menu-toggle{ display:none !important; }
+function buildMapButton(blockText) {
+  if (!blockText) return null;
+  const lines = blockText
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!lines.length) return null;
+  const title = lines[0];
+  const addressLines = lines.slice(1).filter((l) => !/(\+?\s*\d[\d\s()\-]{7,}\d)/.test(l));
+  const address = addressLines.join(', ').replace(/\s+/g, ' ').trim();
+  if (!address) return null;
+  const a = document.createElement('a');
+  a.className = 'alba-footer-action';
+  a.href =
+    'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address);
+  a.target = '_blank';
+  a.rel = 'noopener';
+  const hintTr = 'Haritayı açmak için dokunun';
+  a.innerHTML = `
+    <div class="action-row">
+      <span class="action-icon">📍</span>
+      <span class="action-text">${escapeHtml(title)}</span>
+    </div>
+    <div class="map-address">${escapeHtml(address)}</div>
+    <div class="action-hint alba-blink">${hintTr}</div>
+  `;
+  return a;
 }
 
-/* Desktop-only wheel hint for carousel: small neon mouse icon with animation */
-@media (min-width:901px){
-  .logo-carousel-wrap{ position:relative; }
-  .carousel-wheel-hint{
-    position:absolute;
-    top:8px;
-    right:8px;
-    width:42px;
-    height:42px;
-    border-radius:999px;
-    background:rgba(2,6,23,0.56);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    border:1px solid rgba(0,194,255,0.12);
-    box-shadow:0 6px 20px rgba(0,194,255,0.06);
-    cursor:pointer;
-    transition:transform .18s ease, box-shadow .18s ease;
-    z-index:6;
-    animation:wheelHint 2.4s ease-in-out infinite;
-  }
-  .carousel-wheel-hint svg{ width:18px; height:18px; }
-  .carousel-wheel-hint:hover{ transform:scale(1.06); box-shadow:0 8px 28px rgba(0,194,255,0.12) }
-  .carousel-wheel-hint:focus{ outline:none; box-shadow:0 0 0 4px rgba(0,194,255,0.06) }
-  @keyframes wheelHint{ 0%{ transform:translateY(0) } 50%{ transform:translateY(-4px) } 100%{ transform:translateY(0) } }
+function extractSection(text, startRegex, beforeRegex) {
+  if (!text) return "";
+  const start = text.search(startRegex);
+  if (start === -1) return "";
+
+  const sliced = text.slice(start);
+  if (!beforeRegex) return sliced.trim();
+
+  const end = sliced.search(beforeRegex);
+  if (end === -1) return sliced.trim();
+
+  return sliced.slice(0, end).trim();
 }
 
-/* ==================================================================
-   Consolidated English page defaults (extracted from /eng/ inline styles)
-   These rules are safe defaults used across English pages so we can
-   remove duplicated <style> blocks from individual pages.
-   ==================================================================
-*/
-
-/* Page layout / hero */
-.hero{
-  display:grid;
-  grid-template-columns: minmax(0,1.3fr) minmax(0,1fr);
-  gap:32px;
-  align-items:center;
-  margin-bottom:60px;
-}
-.hero h1{font-size:42px;line-height:1.1;margin-bottom:10px}
-.hero .lead{font-size:16px;color:#4b5563;margin-bottom:20px}
-.hero-buttons{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
-
-/* Buttons */
-.btn-primary,.btn-outline{padding:10px 18px;border-radius:999px;border:1px solid #00c2ff;font-size:14px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
-.btn-primary{background:#00c2ff;color:#020617;font-weight:600}
-.btn-outline{background:transparent;color:#00c2ff}
-
-/* Cards */
-.card-container{display:flex;flex-wrap:wrap;gap:24px;justify-content:center;margin-top:20px}
-.category-card{
-  max-width:360px;
-  border-radius:20px;
-  overflow:hidden;
-  background:var(--glass-bg);
-  border:1px solid var(--glass-border);
-  box-shadow:0 0 28px var(--glass-glow),inset 0 0 22px rgba(255,255,255,0.04);
-  -webkit-backdrop-filter:blur(14px);
-  backdrop-filter:blur(14px)
-}
-.category-card img{width:100%;height:200px;object-fit:cover}
-
-/* Small helpers used in various pages */
-.coming-wrapper{max-width:900px;margin:60px auto;text-align:center}
-.coming-title{font-size:48px;font-weight:700;text-transform:uppercase;color:#111827;letter-spacing:2px}
-
-/* Ensure footer/header baseline kept consistent */
-.footer-logo img{width:60px;height:60px;background:#0f172a;padding:4px;border-radius:999px}
-
-
-/* === GLASS CONTAINERS (GLOBAL) === */
-/* ВАЖНО: НЕ используем section > div — это ломает структуру */
-
-:root{
-  --glass-bg: rgba(10, 15, 30, 0.22);
-  --glass-bg-strong: rgba(8, 12, 28, 0.55);
-  --glass-border: rgba(140, 180, 255, 0.22);
-  --glass-glow: rgba(120, 160, 255, 0.45);
-  --glass-radius: 22px;
+function findPhone(text) {
+  if (!text) return "";
+  const m = text.match(/(\+?\s*\d[\d\s()\-]{7,}\d)/);
+  return m ? m[1].trim() : "";
 }
 
-/* Универсальный класс: можно навешивать на любые блоки */
-.glass-container,
-.model-container,
-.model-viewer-wrapper,
-.page-wrapper,
-.hero,
-.card-container{
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--glass-radius);
-
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-
-  box-shadow:
-    0 0 28px var(--glass-glow),
-    inset 0 0 22px rgba(255,255,255,0.04);
-
-  transition: box-shadow .4s ease, transform .35s ease;
+function escapeHtml(str) {
+  return String(str || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-/* Лёгкое усиление свечения при наведении */
-.glass-container:hover,
-.model-container:hover,
-.model-viewer-wrapper:hover{
-  box-shadow:
-    0 0 45px rgba(120,160,255,0.65),
-    0 0 95px rgba(80,120,255,0.45),
-    inset 0 0 26px rgba(255,255,255,0.08);
-}
+function injectFooterStyles() {
+  if (document.getElementById("alba-footer-style-v5")) return;
 
-/* Carousel scrollbar: small, rounded, neon-blue */
-.logo-carousel{
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0,194,255,0.9) rgba(255,255,255,0.02);
-  padding-bottom: 10px; /* room for visible thumb */
-}
-.logo-carousel::-webkit-scrollbar{ height:8px; }
-.logo-carousel::-webkit-scrollbar-track{ background: rgba(255,255,255,0.02); border-radius:999px; }
-.logo-carousel::-webkit-scrollbar-thumb{
-  background: linear-gradient(90deg,#00c2ff,#29d2ff);
-  border-radius:999px;
-  box-shadow:0 0 10px rgba(0,194,255,0.18);
-  border: 1px solid rgba(255,255,255,0.02);
-}
-.logo-carousel::-webkit-scrollbar-thumb:hover{ filter:brightness(1.05); }
-@media (max-width:900px){
-  .logo-carousel::-webkit-scrollbar{ height:6px }
-}
-
-/* Внутренние отступы: чтобы контент не “лип” к краям */
-.page-wrapper,
-.hero,
-.card-container{
-  padding: 22px;
-}
-
-/* Если у .page-wrapper уже есть padding вверху — оставляем твою логику */
-.page-wrapper{
-  text-align:center;
-}
-
-/* === MODEL VIEWER === */
-.model-viewer-wrapper{
-  background: var(--glass-bg-strong);
-  padding: 40px;
-}
-
-model-viewer{
-  width: 100%;
-  height: 100%;
-  background: transparent;
-
-  border-radius: 18px;
-  box-shadow: 0 0 32px rgba(120,160,255,0.35);
-
-  --poster-color: transparent;
-}
-
-
-/* footer logo block */
-.footer-logo{
-  display:flex;
-  flex-direction:column;
-  align-items:flex-start;
-  gap:10px;
-}
-
-/* vertical socials */
-.footer-social.vertical{
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-  margin-top:10px;
-}
-
-/* icons size */
-.footer-social.vertical img{
-  width:22px;
-  height:22px;
-  transition:transform .2s, filter .2s;
-}
-
-.footer-social.vertical a:hover img{
-  transform:translateX(2px);
-  filter:brightness(1.25);
-}
-
-/* PRELOADER (global) */
-.preloader{
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  display: grid;
-  place-items: center;
-  background: rgba(0,0,0,.85);
-  backdrop-filter: blur(8px);
-  transition: opacity .35s ease, visibility .35s ease;
-}
-
-.preloader.is-hidden{
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.preloader__core{ text-align:center; }
-.preloader__ring{
-  width: 86px; height: 86px;
-  border-radius: 999px;
-  border: 2px solid rgba(255,255,255,.15);
-  border-top-color: rgba(130,73,223,.9);
-  animation: spin 1s linear infinite;
-  box-shadow: 0 0 30px rgba(130,73,223,.35);
-  margin: 0 auto 14px;
-}
-
-.preloader__text{
-  font: 600 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,.75);
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ===================================
-   MODEL VIEWER: FUTURISTIC PRELOADER
-   Applied to any .viewer-wrapper containing a <model-viewer>
-   =================================== */
-.viewer-wrapper{ position:relative; width:100%; border-radius:12px; overflow:hidden; }
-.viewer-wrapper model-viewer{ display:block; width:100%; }
-
-.viewer-wrapper .model-loading-overlay{
-  position:absolute; inset:0; z-index:10;
-  display:flex; align-items:center; justify-content:center;
-  background: radial-gradient(circle at top, #020617 0%, #020617 45%, #000000 100%);
-  color: #e5e7eb; opacity:1; pointer-events:auto; overflow:hidden;
-  animation: overlayFadeIn 0.7s ease-out forwards;
-}
-.viewer-wrapper .model-loading-overlay::before{
-  content: ""; position:absolute; inset:-50%; background:linear-gradient(to bottom, transparent 0%, rgba(0,194,255,0.15) 50%, transparent 100%); animation:scanMove 3.5s linear infinite; mix-blend-mode:screen; pointer-events:none;
-}
-.viewer-wrapper .loader-card{ position:relative; padding:26px 26px 22px; border-radius:18px; background:rgba(15,23,42,0.85); box-shadow:0 0 30px rgba(0,194,255,0.45), 0 0 80px rgba(0,0,0,0.9); border:1px solid rgba(148,163,184,0.3); max-width:320px; width:90%; backdrop-filter:blur(10px); text-align:center; }
-.viewer-wrapper .loading-logo{ display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:18px; }
-.viewer-wrapper .loading-logo img{ width:34px; height:34px; border-radius:999px; background:#020617; padding:4px; box-shadow:0 0 18px rgba(0,194,255,0.6); }
-.viewer-wrapper .loading-logo span{ font-size:15px; letter-spacing:0.16em; text-transform:uppercase; color:#e5e7eb; opacity:0.9; }
-.viewer-wrapper .loader-orb{ position:relative; width:84px; height:84px; margin:0 auto 16px; }
-.viewer-wrapper .orb-ring{ position:absolute; inset:0; border-radius:50%; border:3px solid rgba(148,163,184,0.3); border-top-color:var(--accent, #00c2ff); border-right-color:rgba(56,189,248,0.9); animation:orbSpin 1.5s linear infinite; box-shadow:0 0 18px rgba(0,194,255,0.7), 0 0 32px rgba(37,99,235,0.4); }
-.viewer-wrapper .orb-core{ position:absolute; inset:18px; border-radius:50%; background:radial-gradient(circle, rgba(56,189,248,0.95), rgba(8,47,73,1)); box-shadow:0 0 24px rgba(56,189,248,0.9), 0 0 60px rgba(0,0,0,1); }
-.viewer-wrapper .loading-text{ font-size:15px; line-height:1.4; margin-bottom:14px; color:#e5e7eb; opacity:0.92; }
-.viewer-wrapper .loading-subtext{ font-size:12px; color:#9ca3af; margin-bottom:16px; }
-.viewer-wrapper .progress-shell{ position:relative; width:100%; }
-.viewer-wrapper .progress-bar{ width:100%; height:8px; background:radial-gradient(circle at top, #020617, #020617); border-radius:999px; overflow:hidden; border:1px solid rgba(148,163,184,0.5); }
-.viewer-wrapper .progress-fill{ width:0%; height:100%; background:linear-gradient(90deg, rgba(56,189,248,1), rgba(59,130,246,1), rgba(37,99,235,0.8)); box-shadow:0 0 16px rgba(56,189,248,0.9), 0 0 30px rgba(56,189,248,0.8); border-radius:inherit; transition:width 0.25s ease-out; }
-.viewer-wrapper .progress-glow{ position:absolute; inset:0; border-radius:999px; pointer-events:none; background:radial-gradient(circle at center, rgba(56,189,248,0.35), transparent 60%); opacity:0.0; animation:progressGlow 1.8s ease-in-out infinite; }
-.viewer-wrapper .overlay-hint{ margin-top:8px; font-size:11px; color:#9ca3af; letter-spacing:0.08em; text-transform:uppercase; }
-.viewer-wrapper .model-loading-overlay.fade-out{ animation: overlayFadeOut 0.5s ease-in forwards; pointer-events:none; }
-
-@keyframes overlayFadeIn{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:translateY(0);} }
-@keyframes overlayFadeOut{ from{ opacity:1; transform:translateY(0);} to{ opacity:0; transform:translateY(-4px);} }
-@keyframes orbSpin{ to{ transform:rotate(360deg);} }
-@keyframes glowPulse{ 0%,100%{ opacity:0.4; transform:scale(1);} 50%{ opacity:0.8; transform:scale(1.03);} }
-@keyframes scanMove{ 0%{ transform:translateY(-50%);} 100%{ transform:translateY(50%);} }
-@keyframes progressGlow{ 0%,100%{ opacity:0.1;} 50%{ opacity:0.5;} }
-
-
-
-
-/* ===== Footer layout: 2 columns ===== */
-.footer-grid.footer-grid--2{
-  max-width:1200px;
-  margin:0 auto;
-  display:grid;
-  grid-template-columns: 1fr 1.5fr;
-  gap:26px;
-  align-items:start;
-  text-align:left;
-}
-
-/* ===== Social icons: square + x3 ===== */
-.footer-social.vertical.footer-social--xl{
-  display:flex;
-  flex-direction:column;
-  gap:14px;
-  margin-top:10px;
-}
-
-.footer-social.vertical.footer-social--xl a{
-  display:inline-flex;
-  /* reduced by 25%: 66px -> 49.5px */
-  width:49.5px;
-  height:49.5px;
-}
-
-.footer-social.vertical.footer-social--xl img{
-  /* reduced by 25%: 66px -> 49.5px */
-  width:49.5px;
-  height:49.5px;
-  border-radius:10.5px;  /* квадратные */
-  display:block;
-  box-shadow:0 0 18px rgba(0,194,255,0.18);
-  transition:transform .18s ease, filter .2s ease, box-shadow .25s ease;
-}
-
-.footer-social.vertical.footer-social--xl a:hover img{
-  transform:translateX(3px) scale(1.02);
-  filter:brightness(1.15);
-  box-shadow:0 0 26px rgba(0,194,255,0.45), 0 0 55px rgba(0,194,255,0.18);
-}
-
-/* ===== Right side: 4 glowing buttons ===== */
-.footer-actions{
-  display:grid;
-  grid-template-columns: repeat(2, minmax(0,1fr));
-  gap:14px;
-}
-
-.footer-action{
-  position:relative;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  padding:16px;
-  border-radius:18px;
-  text-decoration:none;
-  color:#e5e7eb;
-
-  background: rgba(15,23,42,0.70);
-  border:1px solid rgba(56,189,248,0.28);
-  box-shadow: 0 0 22px rgba(0,194,255,0.16), inset 0 0 18px rgba(255,255,255,0.04);
-
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-
-  transition: transform .22s ease, box-shadow .28s ease, border-color .28s ease;
-  overflow:hidden;
-}
-
-.footer-action::after{
-  content:"";
-  position:absolute;
-  inset:-40%;
-  background: linear-gradient(to bottom, transparent 0%, rgba(0,194,255,0.18) 50%, transparent 100%);
-  transform: translateY(-35%);
-  opacity:0;
-  transition: opacity .25s ease;
-  pointer-events:none;
-}
-
-.footer-action:hover{
-  transform:translateY(-2px);
-  border-color: rgba(56,189,248,0.55);
-  box-shadow: 0 0 36px rgba(0,194,255,0.45), 0 0 85px rgba(0,194,255,0.14), inset 0 0 22px rgba(255,255,255,0.06);
-}
-
-.footer-action:hover::after{
-  opacity:1;
-  animation: footerScan 2.8s linear infinite;
-}
-
-@keyframes footerScan{
-  0%{ transform: translateY(-45%); }
-  100%{ transform: translateY(45%); }
-}
-
-/* texts */
-.footer-action__title{
-  font-size:12px;
-  letter-spacing:.18em;
-  text-transform:uppercase;
-  color: rgba(224,242,254,0.92);
-}
-
-.footer-action__value{
-  font-size:14px;
-  color:#e5e7eb;
-  word-break: break-word;
-}
-
-.footer-action__hint{
-  margin-top:2px;
-  font-size:11px;                 /* мелкий */
-  color: rgba(156,163,175,0.95);
-  letter-spacing:.04em;
-  animation: softBlink 3.2s ease-in-out infinite; /* медленное мигание */
-}
-
-@keyframes softBlink{
-  0%,100%{ opacity:.35; }
-  50%{ opacity:.95; }
-}
-
-/* mobile */
-@media (max-width:768px){
-  .footer-grid.footer-grid--2{ grid-template-columns:1fr; }
-  .footer-actions{ grid-template-columns:1fr; }
-}
-
-/* Горизонтальный ряд соц-иконок в футере */
-.footer-social--row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 14px;
-}
-
-/* Размер иконок */
-.footer-social--row img {
-  width: 38px;
-  height: 38px;
-  object-fit: contain;
-  transition: transform .25s ease, box-shadow .25s ease;
-}
-
-/* Лёгкий hover-эффект */
-.footer-social--row a:hover img {
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 0 12px rgba(56,189,248,0.45);
+  const s = document.createElement("style");
+  s.id = "alba-footer-style-v5";
+  s.textContent = `
+    .alba-footer-contact-panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .alba-footer-action {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 16px;
+      border-radius: 12px;
+      background: rgba(15,23,42,0.88);
+      border: 1px solid rgba(148,163,184,0.45);
+      color: #e5e7eb;
+      text-decoration: none;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 16px 40px rgba(15,23,42,0.8);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    }
+    .alba-footer-action:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 20px 55px rgba(15,23,42,0.95);
+      border-color: rgba(56,189,248,0.8);
+      background: radial-gradient(circle at top, rgba(15,23,42,1), rgba(8,47,73,0.96));
+    }
+    .action-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .action-icon {
+      font-size: 18px;
+    }
+    .action-text {
+      letter-spacing: 0.01em;
+    }
+    .map-address {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #cbd5f5;
+      text-align: center;
+      line-height: 1.35;
+    }
+    .action-hint {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #60a5fa;
+    }
+    .alba-blink {
+      animation: albaBlink 1.6s ease-in-out infinite;
+    }
+    @keyframes albaBlink {
+      0%, 100% { opacity: 1; transform: translateY(0); }
+      50% { opacity: 0.4; transform: translateY(-1px); }
+    }
+  `;
+  document.head.appendChild(s);
 }
