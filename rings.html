@@ -3,16 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR Try-On v4</title>
+    <title>AR Try-On v5</title>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
         
+        /* Логгер делаем поменьше и полупрозрачным */
         #debug-console {
-            position: absolute; top: 0; left: 0; width: 100%; height: 30%;
-            background: rgba(0, 0, 0, 0.6); color: #00ff00;
+            position: absolute; top: 0; left: 0; width: 100%; height: 20%;
+            background: rgba(0, 0, 0, 0.3); color: #00ff00;
             font-family: monospace; font-size: 10px;
-            overflow-y: scroll; z-index: 1000; padding: 10px;
+            overflow-y: scroll; z-index: 1000; padding: 5px;
             pointer-events: none;
+        }
+
+        /* ВИДЕО ТЕПЕРЬ ВИДИМОЕ */
+        #input_video {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 0; transform: scaleX(-1);
+        }
+
+        /* 3D КАНВАС ПОВЕРХ ВИДЕО */
+        #output_canvas { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 1; transform: scaleX(-1); pointer-events: none;
         }
 
         #ui-container {
@@ -24,10 +37,9 @@
             width: 60px; height: 60px; font-size: 30px;
             display: flex; align-items: center; justify-content: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            cursor: pointer;
         }
-        
-        #input_video { display: none; }
-        #output_canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; transform: scaleX(-1); }
+
         #loading-text {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             color: white; font-size: 18px; z-index: 5; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px;
@@ -50,8 +62,8 @@
 </head>
 <body>
 
-    <div id="debug-console">=== SYSTEM START v4 (Hybrid) ===<br></div>
-    <div id="loading-text">Kamera başlatılıyor...</div>
+    <div id="debug-console">=== SYSTEM START v5 ===<br></div>
+    <div id="loading-text">Elini kameraya göster... (Покажи руку)</div>
 
     <video id="input_video" playsinline muted autoplay></video>
     <canvas id="output_canvas"></canvas>
@@ -62,7 +74,6 @@
     </div>
 
     <script>
-        // Логгер
         const debugDiv = document.getElementById('debug-console');
         window.log = function(msg, color='#0f0') {
             const d = document.createElement('div');
@@ -71,23 +82,11 @@
             debugDiv.appendChild(d);
             debugDiv.scrollTop = debugDiv.scrollHeight;
         }
-        window.onerror = function(msg, source, line) {
-            window.log(`ERROR: ${msg} (Line ${line})`, 'red');
-        }
     </script>
 
     <script type="module">
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-
-        window.log("Three.js imported. Checking MediaPipe...");
-
-        // Проверяем, загрузились ли глобальные скрипты MediaPipe
-        if (typeof window.Hands === 'undefined' || typeof window.Camera === 'undefined') {
-            window.log("CRITICAL: MediaPipe libraries failed to load!", 'red');
-        } else {
-            window.log("MediaPipe Globals OK!");
-        }
 
         const models = ['ring_01.glb', 'ring_02.glb', 'ring_03.glb'];
         
@@ -99,8 +98,8 @@
         let currentRing = null;
 
         try {
-            // Scene Setup
             const scene = new THREE.Scene();
+            // Камера сцены
             const camera3D = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera3D.position.z = 2;
 
@@ -114,20 +113,20 @@
             dirLight.position.set(2, 5, 5);
             scene.add(dirLight);
 
-            // Loader
             const loader = new GLTFLoader();
+
             function loadRing(index) {
                 window.log(`Loading: ${models[index]}...`);
                 if (currentRing) { scene.remove(currentRing); currentRing = null; }
 
                 loader.load(models[index], (gltf) => {
-                    window.log("Model loaded!");
+                    window.log("Model OK!");
                     currentRing = gltf.scene;
                     currentRing.scale.set(15, 15, 15); 
                     scene.add(currentRing);
                 }, undefined, (error) => {
-                    window.log(`LOAD FAIL: ${error.message}`, 'orange');
-                    window.log("Using Fallback Cube", 'yellow');
+                    window.log(`FILE NOT FOUND: ${models[index]}`, 'orange');
+                    // Создаем КУБ, если файл не найден
                     const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
                     const mat = new THREE.MeshNormalMaterial();
                     currentRing = new THREE.Mesh(geo, mat);
@@ -136,7 +135,6 @@
             }
             loadRing(0);
 
-            // MediaPipe (Обращаемся через window, так как подключили скриптами)
             const hands = new window.Hands({locateFile: (file) => {
                 return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
             }});
@@ -149,7 +147,8 @@
             });
 
             hands.onResults((results) => {
-                renderer.autoClear = false;
+                // ВАЖНО: Мы больше не чистим canvas вручную через clear(), 
+                // так как он прозрачный (alpha: true) и лежит поверх видео.
                 renderer.clear();
 
                 if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
@@ -171,12 +170,13 @@
                         currentRing.rotation.z = -angle + Math.PI/2;
                         currentRing.rotation.x = 0.2;
                     }
+                } else {
+                    // Если руку потеряли - покажем текст снова
+                    loadingText.style.display = 'block';
                 }
                 renderer.render(scene, camera3D);
             });
 
-            // Camera Utils
-            window.log("Starting Camera...");
             const camera = new window.Camera(videoElement, {
                 onFrame: async () => {
                     await hands.send({image: videoElement});
@@ -184,10 +184,7 @@
                 width: 1280,
                 height: 720
             });
-            
-            camera.start()
-                .then(() => window.log("Camera started! Hand detect active."))
-                .catch(err => window.log(`CAMERA ERROR: ${err.message}`, 'red'));
+            camera.start();
 
             // Buttons
             document.getElementById('next-btn').onclick = () => {
@@ -200,7 +197,7 @@
             }
 
         } catch (e) {
-            window.log(`CRITICAL CRASH: ${e.message}`, 'red');
+            window.log(`ERROR: ${e.message}`, 'red');
         }
     </script>
 </body>
