@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR Try-On</title>
+    <title>AR Try-On v4</title>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
         
-        /* Логгер ошибок (оставил, чтобы мы видели, если что-то пойдет не так) */
         #debug-console {
-            position: absolute; top: 0; left: 0; width: 100%; height: 40%;
+            position: absolute; top: 0; left: 0; width: 100%; height: 30%;
             background: rgba(0, 0, 0, 0.6); color: #00ff00;
             font-family: monospace; font-size: 10px;
             overflow-y: scroll; z-index: 1000; padding: 10px;
@@ -35,6 +34,11 @@
         }
     </style>
 
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
     <script type="importmap">
         {
             "imports": {
@@ -46,7 +50,7 @@
 </head>
 <body>
 
-    <div id="debug-console">=== SYSTEM START v3 ===<br></div>
+    <div id="debug-console">=== SYSTEM START v4 (Hybrid) ===<br></div>
     <div id="loading-text">Kamera başlatılıyor...</div>
 
     <video id="input_video" playsinline muted autoplay></video>
@@ -58,13 +62,14 @@
     </div>
 
     <script>
+        // Логгер
         const debugDiv = document.getElementById('debug-console');
         window.log = function(msg, color='#0f0') {
             const d = document.createElement('div');
             d.innerText = `> ${msg}`;
             d.style.color = color;
             debugDiv.appendChild(d);
-            debugDiv.scrollTop = debugDiv.scrollHeight; // Auto scroll
+            debugDiv.scrollTop = debugDiv.scrollHeight;
         }
         window.onerror = function(msg, source, line) {
             window.log(`ERROR: ${msg} (Line ${line})`, 'red');
@@ -74,16 +79,18 @@
     <script type="module">
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-        import { Hands } from 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js';
-        import { Camera } from 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js';
 
-        window.log("Modules imported OK!");
+        window.log("Three.js imported. Checking MediaPipe...");
 
-        // === НАСТРОЙКИ ФАЙЛОВ ===
-        // Убедитесь, что названия точь-в-точь как файлы на сервере
+        // Проверяем, загрузились ли глобальные скрипты MediaPipe
+        if (typeof window.Hands === 'undefined' || typeof window.Camera === 'undefined') {
+            window.log("CRITICAL: MediaPipe libraries failed to load!", 'red');
+        } else {
+            window.log("MediaPipe Globals OK!");
+        }
+
         const models = ['ring_01.glb', 'ring_02.glb', 'ring_03.glb'];
-        // ========================
-
+        
         const videoElement = document.getElementById('input_video');
         const canvasElement = document.getElementById('output_canvas');
         const loadingText = document.getElementById('loading-text');
@@ -92,7 +99,7 @@
         let currentRing = null;
 
         try {
-            // 1. Scene Setup
+            // Scene Setup
             const scene = new THREE.Scene();
             const camera3D = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera3D.position.z = 2;
@@ -107,33 +114,30 @@
             dirLight.position.set(2, 5, 5);
             scene.add(dirLight);
 
-            // 2. Load Models
+            // Loader
             const loader = new GLTFLoader();
             function loadRing(index) {
                 window.log(`Loading: ${models[index]}...`);
                 if (currentRing) { scene.remove(currentRing); currentRing = null; }
 
                 loader.load(models[index], (gltf) => {
-                    window.log("Model loaded successfully!");
+                    window.log("Model loaded!");
                     currentRing = gltf.scene;
-                    // МАСШТАБ (Если кольцо слишком большое/маленькое - меняйте здесь)
                     currentRing.scale.set(15, 15, 15); 
                     scene.add(currentRing);
                 }, undefined, (error) => {
-                    window.log(`LOAD ERROR: ${error.message}`, 'orange');
-                    window.log("Creating fallback Cube", 'yellow');
-                    // Fallback
+                    window.log(`LOAD FAIL: ${error.message}`, 'orange');
+                    window.log("Using Fallback Cube", 'yellow');
                     const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
                     const mat = new THREE.MeshNormalMaterial();
                     currentRing = new THREE.Mesh(geo, mat);
                     scene.add(currentRing);
                 });
             }
-            loadRing(0); // Load first model
+            loadRing(0);
 
-            // 3. MediaPipe Hands
-            window.log("Init MediaPipe...");
-            const hands = new Hands({locateFile: (file) => {
+            // MediaPipe (Обращаемся через window, так как подключили скриптами)
+            const hands = new window.Hands({locateFile: (file) => {
                 return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
             }});
 
@@ -149,44 +153,41 @@
                 renderer.clear();
 
                 if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                    loadingText.style.display = 'none'; // Hand found!
+                    loadingText.style.display = 'none';
                     
                     const landmarks = results.multiHandLandmarks[0];
-                    // Ring Finger MCP (13) & PIP (14)
                     const p13 = landmarks[13];
                     const p14 = landmarks[14];
 
                     if (currentRing) {
-                        // Position
-                        // Convert 0..1 to -X..+X
                         const x = -((p13.x + p14.x) / 2 - 0.5) * 10; 
                         const y = -((p13.y + p14.y) / 2 - 0.5) * 10;
-                        const z = -5; // Depth
+                        const z = -5;
                         currentRing.position.set(x, y, z);
 
-                        // Rotation
                         const dx = p14.x - p13.x;
                         const dy = p14.y - p13.y;
                         const angle = Math.atan2(dy, dx);
                         currentRing.rotation.z = -angle + Math.PI/2;
-                        currentRing.rotation.x = 0.2; // Slight tilt
+                        currentRing.rotation.x = 0.2;
                     }
                 }
                 renderer.render(scene, camera3D);
             });
 
-            // 4. Camera
+            // Camera Utils
             window.log("Starting Camera...");
-            const camera = new Camera(videoElement, {
+            const camera = new window.Camera(videoElement, {
                 onFrame: async () => {
                     await hands.send({image: videoElement});
                 },
                 width: 1280,
                 height: 720
             });
+            
             camera.start()
-                .then(() => window.log("Camera OK! Show your hand."))
-                .catch(err => window.log(`CAMERA FAIL: ${err.message}`, 'red'));
+                .then(() => window.log("Camera started! Hand detect active."))
+                .catch(err => window.log(`CAMERA ERROR: ${err.message}`, 'red'));
 
             // Buttons
             document.getElementById('next-btn').onclick = () => {
@@ -199,7 +200,7 @@
             }
 
         } catch (e) {
-            window.log(`CRITICAL: ${e.message}`, 'red');
+            window.log(`CRITICAL CRASH: ${e.message}`, 'red');
         }
     </script>
 </body>
