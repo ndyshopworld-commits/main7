@@ -3,31 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR Debug Super Mode</title>
+    <title>AR Try-On</title>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
+        
+        /* Логгер ошибок (оставил, чтобы мы видели, если что-то пойдет не так) */
         #debug-console {
-            position: absolute; top: 0; left: 0; width: 100%; height: 60%;
-            background: rgba(0, 0, 0, 0.8); color: #00ff00;
-            font-family: monospace; font-size: 11px;
+            position: absolute; top: 0; left: 0; width: 100%; height: 40%;
+            background: rgba(0, 0, 0, 0.6); color: #00ff00;
+            font-family: monospace; font-size: 10px;
             overflow-y: scroll; z-index: 1000; padding: 10px;
-            pointer-events: none; word-wrap: break-word;
+            pointer-events: none;
         }
+
         #ui-container {
             position: absolute; bottom: 30px; left: 0; width: 100%;
             display: flex; justify-content: center; z-index: 10; gap: 20px;
         }
         .arrow-btn {
-            background: rgba(255, 255, 255, 0.8); border: none; border-radius: 50%;
-            width: 50px; height: 50px; font-size: 24px;
+            background: rgba(255, 255, 255, 0.9); border: none; border-radius: 50%;
+            width: 60px; height: 60px; font-size: 30px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
+        
         #input_video { display: none; }
         #output_canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; transform: scaleX(-1); }
+        #loading-text {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: white; font-size: 18px; z-index: 5; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px;
+        }
     </style>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/examples/": "https://unpkg.com/three@0.128.0/examples/"
+            }
+        }
+    </script>
 </head>
 <body>
 
-    <div id="debug-console">=== SUPER LOG v2 ===<br></div>
+    <div id="debug-console">=== SYSTEM START v3 ===<br></div>
+    <div id="loading-text">Kamera başlatılıyor...</div>
 
     <video id="input_video" playsinline muted autoplay></video>
     <canvas id="output_canvas"></canvas>
@@ -39,86 +59,80 @@
 
     <script>
         const debugDiv = document.getElementById('debug-console');
-        window.superLog = function(msg, color = '#0f0') {
-            const line = document.createElement('div');
-            line.innerText = `> ${msg}`;
-            line.style.color = color;
-            debugDiv.appendChild(line);
-            console.log(msg);
+        window.log = function(msg, color='#0f0') {
+            const d = document.createElement('div');
+            d.innerText = `> ${msg}`;
+            d.style.color = color;
+            debugDiv.appendChild(d);
+            debugDiv.scrollTop = debugDiv.scrollHeight; // Auto scroll
         }
-
-        // Ловим глобальные ошибки загрузки скриптов
-        window.addEventListener('error', function(event) {
-            window.superLog(`GLOBAL ERROR: ${event.message}`, 'red');
-            window.superLog(`File: ${event.filename}, Line: ${event.lineno}`, 'red');
-            return false;
-        });
-
-        // Ловим ошибки невыполненных промисов
-        window.addEventListener('unhandledrejection', function(event) {
-            window.superLog(`PROMISE ERROR: ${event.reason}`, 'red');
-        });
-
-        window.superLog("Logger initialized. Waiting for modules...");
+        window.onerror = function(msg, source, line) {
+            window.log(`ERROR: ${msg} (Line ${line})`, 'red');
+        }
     </script>
 
     <script type="module">
-        import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
-        import { GLTFLoader } from 'https://unpkg.com/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
         import { Hands } from 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js';
         import { Camera } from 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js';
 
-        window.superLog("Modules imported successfully!");
+        window.log("Modules imported OK!");
 
-        // === НАСТРОЙКИ ===
+        // === НАСТРОЙКИ ФАЙЛОВ ===
+        // Убедитесь, что названия точь-в-точь как файлы на сервере
         const models = ['ring_01.glb', 'ring_02.glb', 'ring_03.glb'];
-        // =================
+        // ========================
 
         const videoElement = document.getElementById('input_video');
         const canvasElement = document.getElementById('output_canvas');
-        
+        const loadingText = document.getElementById('loading-text');
+
         let currentModelIndex = 0;
         let currentRing = null;
 
         try {
-            window.superLog("Initializing Three.js...");
+            // 1. Scene Setup
             const scene = new THREE.Scene();
             const camera3D = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera3D.position.z = 2;
 
             const renderer = new THREE.WebGLRenderer({ canvas: canvasElement, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1);
             scene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-            directionalLight.position.set(0, 10, 10);
-            scene.add(directionalLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+            dirLight.position.set(2, 5, 5);
+            scene.add(dirLight);
 
-            window.superLog("Three.js OK. Loading models...");
-
+            // 2. Load Models
             const loader = new GLTFLoader();
             function loadRing(index) {
-                window.superLog(`Loading: ${models[index]}`);
+                window.log(`Loading: ${models[index]}...`);
                 if (currentRing) { scene.remove(currentRing); currentRing = null; }
-                
+
                 loader.load(models[index], (gltf) => {
-                    window.superLog("Model loaded!");
+                    window.log("Model loaded successfully!");
                     currentRing = gltf.scene;
-                    currentRing.scale.set(15, 15, 15);
+                    // МАСШТАБ (Если кольцо слишком большое/маленькое - меняйте здесь)
+                    currentRing.scale.set(15, 15, 15); 
                     scene.add(currentRing);
-                }, undefined, (err) => {
-                    window.superLog(`Model load ERROR: ${err.message}`, 'orange');
+                }, undefined, (error) => {
+                    window.log(`LOAD ERROR: ${error.message}`, 'orange');
+                    window.log("Creating fallback Cube", 'yellow');
+                    // Fallback
                     const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
                     const mat = new THREE.MeshNormalMaterial();
                     currentRing = new THREE.Mesh(geo, mat);
                     scene.add(currentRing);
-                    window.superLog("Created fallback Cube", 'yellow');
                 });
             }
-            loadRing(0);
+            loadRing(0); // Load first model
 
-            window.superLog("Setting up MediaPipe...");
+            // 3. MediaPipe Hands
+            window.log("Init MediaPipe...");
             const hands = new Hands({locateFile: (file) => {
                 return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
             }});
@@ -133,60 +147,59 @@
             hands.onResults((results) => {
                 renderer.autoClear = false;
                 renderer.clear();
-                
+
                 if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                    loadingText.style.display = 'none'; // Hand found!
+                    
                     const landmarks = results.multiHandLandmarks[0];
+                    // Ring Finger MCP (13) & PIP (14)
                     const p13 = landmarks[13];
                     const p14 = landmarks[14];
-                    
+
                     if (currentRing) {
-                        const x = -((p13.x + p14.x) / 2 - 0.5) * 10;
+                        // Position
+                        // Convert 0..1 to -X..+X
+                        const x = -((p13.x + p14.x) / 2 - 0.5) * 10; 
                         const y = -((p13.y + p14.y) / 2 - 0.5) * 10;
-                        currentRing.position.set(x, y, -5);
-                        
-                        const dx = (p14.x - p13.x);
-                        const dy = (p14.y - p13.y);
-                        currentRing.rotation.z = -Math.atan2(dy, dx) + Math.PI/2;
+                        const z = -5; // Depth
+                        currentRing.position.set(x, y, z);
+
+                        // Rotation
+                        const dx = p14.x - p13.x;
+                        const dy = p14.y - p13.y;
+                        const angle = Math.atan2(dy, dx);
+                        currentRing.rotation.z = -angle + Math.PI/2;
+                        currentRing.rotation.x = 0.2; // Slight tilt
                     }
                 }
                 renderer.render(scene, camera3D);
             });
 
-            window.superLog("Requesting Camera...");
-            
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then((stream) => {
-                    window.superLog("Camera Access GRANTED");
-                    stream.getTracks().forEach(track => track.stop());
-                    
-                    const camera = new Camera(videoElement, {
-                        onFrame: async () => {
-                            await hands.send({image: videoElement});
-                        },
-                        width: 1280,
-                        height: 720
-                    });
-                    
-                    camera.start()
-                        .then(() => window.superLog("Camera Utility Started!"))
-                        .catch(e => window.superLog(`Camera Util Error: ${e.message}`, 'red'));
-                })
-                .catch((err) => {
-                    window.superLog(`CAMERA DENIED: ${err.message}`, 'red');
-                });
+            // 4. Camera
+            window.log("Starting Camera...");
+            const camera = new Camera(videoElement, {
+                onFrame: async () => {
+                    await hands.send({image: videoElement});
+                },
+                width: 1280,
+                height: 720
+            });
+            camera.start()
+                .then(() => window.log("Camera OK! Show your hand."))
+                .catch(err => window.log(`CAMERA FAIL: ${err.message}`, 'red'));
 
-            // Кнопки
+            // Buttons
             document.getElementById('next-btn').onclick = () => {
                 currentModelIndex = (currentModelIndex + 1) % models.length;
                 loadRing(currentModelIndex);
-            };
+            }
             document.getElementById('prev-btn').onclick = () => {
                 currentModelIndex = (currentModelIndex - 1 + models.length) % models.length;
                 loadRing(currentModelIndex);
-            };
+            }
 
         } catch (e) {
-            window.superLog(`CRITICAL ERROR: ${e.message}`, 'red');
+            window.log(`CRITICAL: ${e.message}`, 'red');
         }
     </script>
 </body>
