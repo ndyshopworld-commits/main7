@@ -3,27 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR Debug Mode</title>
+    <title>AR Debug Super Mode</title>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
-        #input_video { display: none; }
-        #output_canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; transform: scaleX(-1); }
-        
-        /* КОНСОЛЬ ОТЛАДКИ */
         #debug-console {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 50%;
-            background: rgba(0, 0, 0, 0.8);
-            color: #0f0;
-            font-family: monospace;
-            font-size: 12px;
-            overflow-y: scroll;
-            z-index: 100;
-            padding: 10px;
-            pointer-events: none; /* Чтобы можно было нажимать сквозь нее */
-            white-space: pre-wrap;
+            position: absolute; top: 0; left: 0; width: 100%; height: 60%;
+            background: rgba(0, 0, 0, 0.8); color: #00ff00;
+            font-family: monospace; font-size: 11px;
+            overflow-y: scroll; z-index: 1000; padding: 10px;
+            pointer-events: none; word-wrap: break-word;
         }
-
         #ui-container {
             position: absolute; bottom: 30px; left: 0; width: 100%;
             display: flex; justify-content: center; z-index: 10; gap: 20px;
@@ -32,11 +21,13 @@
             background: rgba(255, 255, 255, 0.8); border: none; border-radius: 50%;
             width: 50px; height: 50px; font-size: 24px;
         }
+        #input_video { display: none; }
+        #output_canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; transform: scaleX(-1); }
     </style>
 </head>
 <body>
 
-    <div id="debug-console">=== SYSTEM LOG ===<br></div>
+    <div id="debug-console">=== SUPER LOG v2 ===<br></div>
 
     <video id="input_video" playsinline muted autoplay></video>
     <canvas id="output_canvas"></canvas>
@@ -46,30 +37,38 @@
         <button class="arrow-btn" id="next-btn">▶</button>
     </div>
 
-    <script type="module">
-        // 1. ФУНКЦИЯ ЛОГИРОВАНИЯ (Пишет текст на экран)
+    <script>
         const debugDiv = document.getElementById('debug-console');
-        function log(msg, isError = false) {
+        window.superLog = function(msg, color = '#0f0') {
             const line = document.createElement('div');
-            line.textContent = `> ${msg}`;
-            if (isError) line.style.color = 'red';
+            line.innerText = `> ${msg}`;
+            line.style.color = color;
             debugDiv.appendChild(line);
             console.log(msg);
         }
-        
-        // Перехват глобальных ошибок
-        window.onerror = function(message, source, lineno, colno, error) {
-            log(`CRITICAL ERROR: ${message}`, true);
-        };
 
-        log("Step 1: Script started...");
+        // Ловим глобальные ошибки загрузки скриптов
+        window.addEventListener('error', function(event) {
+            window.superLog(`GLOBAL ERROR: ${event.message}`, 'red');
+            window.superLog(`File: ${event.filename}, Line: ${event.lineno}`, 'red');
+            return false;
+        });
 
-        import * as THREE from 'https://cdn.skypack.dev/three@0.128.0';
-        import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
+        // Ловим ошибки невыполненных промисов
+        window.addEventListener('unhandledrejection', function(event) {
+            window.superLog(`PROMISE ERROR: ${event.reason}`, 'red');
+        });
+
+        window.superLog("Logger initialized. Waiting for modules...");
+    </script>
+
+    <script type="module">
+        import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
+        import { GLTFLoader } from 'https://unpkg.com/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
         import { Hands } from 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js';
         import { Camera } from 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js';
 
-        log("Step 2: Libraries imported successfully");
+        window.superLog("Modules imported successfully!");
 
         // === НАСТРОЙКИ ===
         const models = ['ring_01.glb', 'ring_02.glb', 'ring_03.glb'];
@@ -82,8 +81,7 @@
         let currentRing = null;
 
         try {
-            // Three.js Setup
-            log("Step 3: Initializing Three.js");
+            window.superLog("Initializing Three.js...");
             const scene = new THREE.Scene();
             const camera3D = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera3D.position.z = 2;
@@ -97,30 +95,30 @@
             directionalLight.position.set(0, 10, 10);
             scene.add(directionalLight);
 
-            // Loader
+            window.superLog("Three.js OK. Loading models...");
+
             const loader = new GLTFLoader();
             function loadRing(index) {
-                log(`Loading model: ${models[index]}`);
+                window.superLog(`Loading: ${models[index]}`);
                 if (currentRing) { scene.remove(currentRing); currentRing = null; }
                 
                 loader.load(models[index], (gltf) => {
-                    log("Model loaded OK");
+                    window.superLog("Model loaded!");
                     currentRing = gltf.scene;
                     currentRing.scale.set(15, 15, 15);
                     scene.add(currentRing);
                 }, undefined, (err) => {
-                    log(`Model load error: ${err.message}`, true);
-                    // Создаем тестовый куб, если модель не грузится
+                    window.superLog(`Model load ERROR: ${err.message}`, 'orange');
                     const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
                     const mat = new THREE.MeshNormalMaterial();
                     currentRing = new THREE.Mesh(geo, mat);
                     scene.add(currentRing);
+                    window.superLog("Created fallback Cube", 'yellow');
                 });
             }
             loadRing(0);
 
-            // MediaPipe Setup
-            log("Step 4: Setting up MediaPipe Hands");
+            window.superLog("Setting up MediaPipe...");
             const hands = new Hands({locateFile: (file) => {
                 return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
             }});
@@ -133,10 +131,6 @@
             });
 
             hands.onResults((results) => {
-                // Если мы попали сюда, значит нейросеть работает!
-                // Очищаем лог, если он слишком длинный
-                if (debugDiv.childElementCount > 20) debugDiv.innerHTML = ''; 
-                
                 renderer.autoClear = false;
                 renderer.clear();
                 
@@ -150,7 +144,6 @@
                         const y = -((p13.y + p14.y) / 2 - 0.5) * 10;
                         currentRing.position.set(x, y, -5);
                         
-                        // Простая ротация
                         const dx = (p14.x - p13.x);
                         const dy = (p14.y - p13.y);
                         currentRing.rotation.z = -Math.atan2(dy, dx) + Math.PI/2;
@@ -159,17 +152,13 @@
                 renderer.render(scene, camera3D);
             });
 
-            // Camera Setup
-            log("Step 5: Requesting Camera access...");
+            window.superLog("Requesting Camera...");
             
-            // Прямая проверка доступа к камере перед запуском утилиты
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then((stream) => {
-                    log("Camera Access GRANTED (Direct check passed)");
-                    // Останавливаем поток, чтобы передать его утилите Camera
+                    window.superLog("Camera Access GRANTED");
                     stream.getTracks().forEach(track => track.stop());
                     
-                    log("Starting MediaPipe Camera Utility...");
                     const camera = new Camera(videoElement, {
                         onFrame: async () => {
                             await hands.send({image: videoElement});
@@ -179,16 +168,25 @@
                     });
                     
                     camera.start()
-                        .then(() => log("Camera Utility Started! Wait for hands..."))
-                        .catch(e => log(`Camera Util Error: ${e.message}`, true));
+                        .then(() => window.superLog("Camera Utility Started!"))
+                        .catch(e => window.superLog(`Camera Util Error: ${e.message}`, 'red'));
                 })
                 .catch((err) => {
-                    log(`CAMERA PERMISSION DENIED: ${err.name} - ${err.message}`, true);
-                    log("Please check iOS Settings > Safari > Camera", true);
+                    window.superLog(`CAMERA DENIED: ${err.message}`, 'red');
                 });
 
+            // Кнопки
+            document.getElementById('next-btn').onclick = () => {
+                currentModelIndex = (currentModelIndex + 1) % models.length;
+                loadRing(currentModelIndex);
+            };
+            document.getElementById('prev-btn').onclick = () => {
+                currentModelIndex = (currentModelIndex - 1 + models.length) % models.length;
+                loadRing(currentModelIndex);
+            };
+
         } catch (e) {
-            log(`CRITICAL SETUP ERROR: ${e.message}`, true);
+            window.superLog(`CRITICAL ERROR: ${e.message}`, 'red');
         }
     </script>
 </body>
