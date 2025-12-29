@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Unisex Starbase City T‑Shirt – AlbaSpace</title>
+  <title>SpaceX Dragon Scale Model – AlbaSpace</title>
   <link rel="stylesheet" href="/assets/css/site.css">
   <link rel="stylesheet" href="/assets/css/shop.css">
   <script src="/assets/js/include.js" defer></script>
@@ -15,15 +15,16 @@
 
   <main class="product-page">
     <div class="product-detail">
-      <img src="/assets/images/shirt.png" alt="Unisex Starbase City T-Shirt">
+      <img src="/assets/images/dragon.png" alt="SpaceX Dragon Scale Model">
       <div class="detail-info">
-        <h1>Unisex Starbase City T‑Shirt</h1>
-        <div class="product-price">$35.00</div>
+        <h1>SpaceX Dragon Scale Model</h1>
+        <div class="product-price">$300.00</div>
         <ul class="product-details">
-          <li>Ultra soft cotton blend for everyday comfort</li>
-          <li>Crew neck and short sleeves</li>
-          <li>Pre‑shrunk for a consistent fit</li>
-          <li>Screen printed Starbase City graphic</li>
+          <li>1:48 scale</li>
+          <li>Approximately 4.5" tall</li>
+          <li>Approximately 500 grams</li>
+          <li>Base inscribed with vehicle names</li>
+          <li>Magnetic base</li>
         </ul>
         <!-- Quantity selector -->
         <div class="qty-control" style="margin:16px 0;" data-qty>
@@ -33,10 +34,10 @@
         </div>
         <!-- Add to cart button -->
         <button class="btn-primary" id="addToCartBtn"
-          data-product-id="tshirt"
-          data-product-name="Unisex Starbase City T-Shirt"
-          data-product-price="35"
-          data-product-image="/assets/images/shirt.png"
+          data-product-id="dragon-scale-model"
+          data-product-name="SpaceX Dragon Scale Model"
+          data-product-price="300"
+          data-product-image="/assets/images/dragon.png"
           data-add-label="ADD TO CART"
           data-added-label="ADDED!">
           ADD TO CART
@@ -48,13 +49,6 @@
     <section class="related-products">
       <h2>You may also like</h2>
       <div class="product-list">
-        <a class="product-card" href="/eng/product-dragon.html">
-          <img src="/assets/images/dragon.png" alt="SpaceX Dragon Scale Model">
-          <div class="product-info">
-            <h3>SpaceX Dragon Scale Model</h3>
-            <div class="product-price">$300.00</div>
-          </div>
-        </a>
         <a class="product-card" href="/eng/product-hoodie.html">
           <img src="/assets/images/hoodie.png" alt="Unisex SpaceX Pullover Hoodie">
           <div class="product-info">
@@ -69,6 +63,13 @@
             <div class="product-price">$40.00</div>
           </div>
         </a>
+        <a class="product-card" href="/eng/product-shirt.html">
+          <img src="/assets/images/shirt.png" alt="Unisex Starbase City T‑Shirt">
+          <div class="product-info">
+            <h3>Unisex Starbase City T‑Shirt</h3>
+            <div class="product-price">$35.00</div>
+          </div>
+        </a>
       </div>
     </section>
   </main>
@@ -76,7 +77,7 @@
   <div data-include="/footer-en.html"></div>
 
   <script>
-    // Product page logic for T-Shirt (English)
+    // Product page logic for Dragon model (English)
     document.addEventListener('DOMContentLoaded', () => {
       const minusBtn = document.querySelector('[data-qty-minus]');
       const plusBtn = document.querySelector('[data-qty-plus]');
@@ -100,6 +101,7 @@
           url: window.location.pathname,
           qty
         });
+        // Provide feedback to user
         const originalText = btn.dataset.addLabel || btn.textContent;
         btn.textContent = btn.dataset.addedLabel || 'Added!';
         btn.disabled = true;
