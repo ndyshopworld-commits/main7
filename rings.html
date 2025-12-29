@@ -3,54 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR Yüzük Deneme</title>
+    <title>AR Debug Mode</title>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
         #input_video { display: none; }
         #output_canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; transform: scaleX(-1); }
         
-        #ui-container {
+        /* КОНСОЛЬ ОТЛАДКИ */
+        #debug-console {
             position: absolute;
-            bottom: 30px;
-            left: 0;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-            gap: 20px;
+            top: 0; left: 0; width: 100%; height: 50%;
+            background: rgba(0, 0, 0, 0.8);
+            color: #0f0;
+            font-family: monospace;
+            font-size: 12px;
+            overflow-y: scroll;
+            z-index: 100;
+            padding: 10px;
+            pointer-events: none; /* Чтобы можно было нажимать сквозь нее */
+            white-space: pre-wrap;
         }
-        
+
+        #ui-container {
+            position: absolute; bottom: 30px; left: 0; width: 100%;
+            display: flex; justify-content: center; z-index: 10; gap: 20px;
+        }
         .arrow-btn {
-            background: rgba(255, 255, 255, 0.8);
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 24px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        .arrow-btn:active { background: #fff; transform: scale(0.95); }
-        
-        #loading {
-            position: absolute; top: 50%; left: 50%; 
-            transform: translate(-50%, -50%); 
-            color: white; z-index: 20; text-align: center;
-            background: rgba(0,0,0,0.7); padding: 15px 25px; border-radius: 8px;
+            background: rgba(255, 255, 255, 0.8); border: none; border-radius: 50%;
+            width: 50px; height: 50px; font-size: 24px;
         }
     </style>
 </head>
 <body>
 
+    <div id="debug-console">=== SYSTEM LOG ===<br></div>
+
     <video id="input_video" playsinline muted autoplay></video>
     <canvas id="output_canvas"></canvas>
-    <div id="loading">Yapay zeka başlatılıyor...</div>
 
     <div id="ui-container">
         <button class="arrow-btn" id="prev-btn">◀</button>
@@ -58,154 +47,149 @@
     </div>
 
     <script type="module">
+        // 1. ФУНКЦИЯ ЛОГИРОВАНИЯ (Пишет текст на экран)
+        const debugDiv = document.getElementById('debug-console');
+        function log(msg, isError = false) {
+            const line = document.createElement('div');
+            line.textContent = `> ${msg}`;
+            if (isError) line.style.color = 'red';
+            debugDiv.appendChild(line);
+            console.log(msg);
+        }
+        
+        // Перехват глобальных ошибок
+        window.onerror = function(message, source, lineno, colno, error) {
+            log(`CRITICAL ERROR: ${message}`, true);
+        };
+
+        log("Step 1: Script started...");
+
         import * as THREE from 'https://cdn.skypack.dev/three@0.128.0';
         import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
         import { Hands } from 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js';
         import { Camera } from 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js';
 
-        // ==========================================
-        // СПИСОК МОДЕЛЕЙ (Проверьте, что файлы с такими именами есть в папке!)
-        const models = [
-            'ring_01.glb', 
-            'ring_02.glb',
-            'ring_03.glb' 
-        ];
-        // ==========================================
+        log("Step 2: Libraries imported successfully");
+
+        // === НАСТРОЙКИ ===
+        const models = ['ring_01.glb', 'ring_02.glb', 'ring_03.glb'];
+        // =================
 
         const videoElement = document.getElementById('input_video');
         const canvasElement = document.getElementById('output_canvas');
-        const loadingDiv = document.getElementById('loading');
         
         let currentModelIndex = 0;
         let currentRing = null;
 
-        // Инициализация Three.js
-        const scene = new THREE.Scene();
-        const camera3D = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera3D.position.z = 2;
+        try {
+            // Three.js Setup
+            log("Step 3: Initializing Three.js");
+            const scene = new THREE.Scene();
+            const camera3D = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera3D.position.z = 2;
 
-        const renderer = new THREE.WebGLRenderer({ canvas: canvasElement, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-        scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(0, 10, 10);
-        scene.add(directionalLight);
-
-        const loader = new GLTFLoader();
-
-        function loadRing(index) {
-            if(models.length === 0) return;
+            const renderer = new THREE.WebGLRenderer({ canvas: canvasElement, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
             
-            loadingDiv.style.display = 'block';
-            loadingDiv.innerText = "Model yükleniyor..."; // Перевод: Загрузка модели
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(0, 10, 10);
+            scene.add(directionalLight);
 
-            if (currentRing) {
-                scene.remove(currentRing);
-                currentRing = null;
-            }
-
-            loader.load(
-                models[index],
-                (gltf) => {
+            // Loader
+            const loader = new GLTFLoader();
+            function loadRing(index) {
+                log(`Loading model: ${models[index]}`);
+                if (currentRing) { scene.remove(currentRing); currentRing = null; }
+                
+                loader.load(models[index], (gltf) => {
+                    log("Model loaded OK");
                     currentRing = gltf.scene;
-                    currentRing.scale.set(15, 15, 15); 
+                    currentRing.scale.set(15, 15, 15);
                     scene.add(currentRing);
-                    loadingDiv.style.display = 'none';
-                },
-                undefined,
-                (error) => {
-                    console.error(error);
-                    // Если модели нет, создадим тестовый бублик
-                    loadingDiv.innerText = "Model bulunamadı (Test Mode)"; // Модель не найдена
-                    setTimeout(() => loadingDiv.style.display = 'none', 2000);
-                    
-                    const geometry = new THREE.TorusGeometry(0.5, 0.1, 16, 100);
-                    const material = new THREE.MeshStandardMaterial({ color: 0xffd700 });
-                    currentRing = new THREE.Mesh(geometry, material);
+                }, undefined, (err) => {
+                    log(`Model load error: ${err.message}`, true);
+                    // Создаем тестовый куб, если модель не грузится
+                    const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+                    const mat = new THREE.MeshNormalMaterial();
+                    currentRing = new THREE.Mesh(geo, mat);
                     scene.add(currentRing);
-                }
-            );
-        }
-
-        // Кнопки
-        document.getElementById('next-btn').onclick = () => {
-            currentModelIndex = (currentModelIndex + 1) % models.length;
-            loadRing(currentModelIndex);
-        };
-        document.getElementById('prev-btn').onclick = () => {
-            currentModelIndex = (currentModelIndex - 1 + models.length) % models.length;
-            loadRing(currentModelIndex);
-        };
-
-        loadRing(currentModelIndex);
-
-        // MediaPipe Hands
-        function onResults(results) {
-            renderer.autoClear = false;
-            renderer.clear();
-            
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                const landmarks = results.multiHandLandmarks[0];
-                const pointBase = landmarks[13]; 
-                const pointMid = landmarks[14];
-
-                if (currentRing) {
-                    const x = -((pointBase.x + pointMid.x) / 2 - 0.5) * 10;
-                    const y = -((pointBase.y + pointMid.y) / 2 - 0.5) * 10;
-                    const z = -5;
-                    currentRing.position.set(x, y, z);
-
-                    const dx = (pointMid.x - pointBase.x);
-                    const dy = (pointMid.y - pointBase.y);
-                    const angle = Math.atan2(dy, dx); 
-                    currentRing.rotation.z = -angle + Math.PI / 2; 
-                    currentRing.rotation.x = 0.5; 
-                }
+                });
             }
-            renderer.render(scene, camera3D);
-        }
+            loadRing(0);
 
-        const hands = new Hands({locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-        }});
+            // MediaPipe Setup
+            log("Step 4: Setting up MediaPipe Hands");
+            const hands = new Hands({locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }});
 
-        hands.setOptions({
-            maxNumHands: 1,
-            modelComplexity: 1,
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5
-        });
-
-        hands.onResults(onResults);
-
-        // Запуск камеры с отловом ошибок
-        const camera = new Camera(videoElement, {
-            onFrame: async () => {
-                await hands.send({image: videoElement});
-            },
-            width: 1280,
-            height: 720
-        });
-
-        camera.start()
-            .then(() => {
-                console.log("Camera started");
-                loadingDiv.style.display = 'none';
-            })
-            .catch(err => {
-                // ВЫВОД ОШИБКИ НА ЭКРАН ТЕЛЕФОНА
-                alert("Kamera hatası: " + err.message + "\nLütfen izinleri kontrol edin."); 
-                console.error(err);
+            hands.setOptions({
+                maxNumHands: 1,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
             });
 
-        window.addEventListener('resize', () => {
-            camera3D.aspect = window.innerWidth / window.innerHeight;
-            camera3D.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+            hands.onResults((results) => {
+                // Если мы попали сюда, значит нейросеть работает!
+                // Очищаем лог, если он слишком длинный
+                if (debugDiv.childElementCount > 20) debugDiv.innerHTML = ''; 
+                
+                renderer.autoClear = false;
+                renderer.clear();
+                
+                if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                    const landmarks = results.multiHandLandmarks[0];
+                    const p13 = landmarks[13];
+                    const p14 = landmarks[14];
+                    
+                    if (currentRing) {
+                        const x = -((p13.x + p14.x) / 2 - 0.5) * 10;
+                        const y = -((p13.y + p14.y) / 2 - 0.5) * 10;
+                        currentRing.position.set(x, y, -5);
+                        
+                        // Простая ротация
+                        const dx = (p14.x - p13.x);
+                        const dy = (p14.y - p13.y);
+                        currentRing.rotation.z = -Math.atan2(dy, dx) + Math.PI/2;
+                    }
+                }
+                renderer.render(scene, camera3D);
+            });
+
+            // Camera Setup
+            log("Step 5: Requesting Camera access...");
+            
+            // Прямая проверка доступа к камере перед запуском утилиты
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then((stream) => {
+                    log("Camera Access GRANTED (Direct check passed)");
+                    // Останавливаем поток, чтобы передать его утилите Camera
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    log("Starting MediaPipe Camera Utility...");
+                    const camera = new Camera(videoElement, {
+                        onFrame: async () => {
+                            await hands.send({image: videoElement});
+                        },
+                        width: 1280,
+                        height: 720
+                    });
+                    
+                    camera.start()
+                        .then(() => log("Camera Utility Started! Wait for hands..."))
+                        .catch(e => log(`Camera Util Error: ${e.message}`, true));
+                })
+                .catch((err) => {
+                    log(`CAMERA PERMISSION DENIED: ${err.name} - ${err.message}`, true);
+                    log("Please check iOS Settings > Safari > Camera", true);
+                });
+
+        } catch (e) {
+            log(`CRITICAL SETUP ERROR: ${e.message}`, true);
+        }
     </script>
 </body>
 </html>
