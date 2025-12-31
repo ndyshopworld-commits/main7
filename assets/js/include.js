@@ -25,6 +25,11 @@ runAfterDomReady(() => {
   // 3. Загружаем CSS и скрипт для model-viewer
   injectModelViewerStyles();
   ensureModelViewerLoaded();
+  // 3.1. Фикс фона и ширины на iOS
+  injectBackgroundFix();
+
+
+  
   // 4. Создаём лоадеры
   const ensurePreloaderScript = createPreloaderLoader();
   const ensureModelPreloader = createModelPreloaderLoader();
@@ -517,6 +522,30 @@ function injectModelViewerStyles() {
   `;
   document.head.appendChild(style);
 }
+
+// Фикс увеличенного фона и «лишней ширины» на iPhone/iOS
+function injectBackgroundFix() {
+  if (document.getElementById('alba-bg-fix-style')) return;
+
+  const style = document.createElement('style');
+  style.id = 'alba-bg-fix-style';
+  style.textContent = `
+    /* Применяем только в Safari/iOS (webkit-особенность) */
+    @supports (-webkit-touch-callout: none) {
+      html, body {
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+      /* Перебиваем background-attachment: fixed из inline-стиля body */
+      body {
+        background-attachment: scroll !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+
 
 function ensureModelViewerLoaded() {
   const hasModelViewer = !!document.querySelector("model-viewer");
