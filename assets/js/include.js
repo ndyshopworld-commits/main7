@@ -28,8 +28,6 @@ runAfterDomReady(() => {
   // 3.1. Фикс фона и ширины на iOS
   injectBackgroundFix();
 
-
-  
   // 4. Создаём лоадеры
   const ensurePreloaderScript = createPreloaderLoader();
   const ensureModelPreloader = createModelPreloaderLoader();
@@ -251,55 +249,73 @@ runAfterDomReady(() => {
     }
 
     function sendMessage() {
-      const txt = inputField.value.trim();
+      const txt = (inputField.value || '').trim();
       if (!txt) return;
+
       panel.classList.add('chat-active');
       addMessage(txt, 'user');
       inputField.value = '';
+
       const loadingId = 'loading-' + Date.now();
       addMessage('...', 'bot', loadingId);
       statusText.textContent = strings.connect;
       statusText.style.display = 'block';
 
       const workerUrl = 'https://divine-flower-a0ae.nncdecdgc.workers.dev';
+
       fetch(workerUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: txt,
-          savedName: localStorage.getItem('albamen_user_name'),
-          savedAge: localStorage.getItem('albamen_user_age')
-        })
+        body: JSON.stringify({ message: txt })
       })
-      .then(res => res.json())
-      .then(data => {
-        const loader = document.getElementById(loadingId);
-        if (loader) loader.remove();
-        if (data.reply) {
-          let finalReply = data.reply;
+        .then(res => res.json())
+        .then(data => {
+          const loader = document.getElementById(loadingId);
+          if (loader) loader.remove();
+
+          if (!data || typeof data.reply !== 'string') {
+            addMessage(strings.connectionError, 'bot');
+            statusText.style.display = 'none';
+            return;
+          }
+
+          let finalReply = data.reply.trim();
+
+          // Если воркер вернул текст своей ошибки — прячем его от пользователя
+          if (/^(Grok Hatası|JS Hatası)/i.test(finalReply)) {
+            addMessage(strings.connectionError, 'bot');
+            statusText.style.display = 'none';
+            return;
+          }
+
           const nameMatch = finalReply.match(/<SAVE_NAME:(.*?)>/);
           if (nameMatch) {
             const newName = nameMatch[1].trim();
-            localStorage.setItem('albamen_user_name', newName);
+            if (newName) {
+              localStorage.setItem('albamen_user_name', newName);
+            }
             finalReply = finalReply.replace(nameMatch[0], '');
           }
+
           const ageMatch = finalReply.match(/<SAVE_AGE:(.*?)>/);
           if (ageMatch) {
             const newAge = ageMatch[1].trim();
-            localStorage.setItem('albamen_user_age', newAge);
+            if (newAge) {
+              localStorage.setItem('albamen_user_age', newAge);
+            }
             finalReply = finalReply.replace(ageMatch[0], '');
           }
+
           addMessage(finalReply.trim(), 'bot');
-        } else {
+          statusText.style.display = 'none';
+        })
+        .catch(err => {
+          console.error('AI Error:', err);
+          const loader = document.getElementById(loadingId);
+          if (loader) loader.remove();
           addMessage(strings.connectionError, 'bot');
-        }
-      })
-      .catch(err => {
-        console.error("AI Error:", err);
-        const loader = document.getElementById(loadingId);
-        if (loader) loader.remove();
-        addMessage(strings.connectionError, 'bot');
-      });
+          statusText.style.display = 'none';
+        });
     }
 
     sendBtn.addEventListener('click', sendMessage);
@@ -544,8 +560,6 @@ function injectBackgroundFix() {
   `;
   document.head.appendChild(style);
 }
-
-
 
 function ensureModelViewerLoaded() {
   const hasModelViewer = !!document.querySelector("model-viewer");
