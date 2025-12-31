@@ -145,11 +145,206 @@ runAfterDomReady(() => {
   } else {
     ensureModelPreloader();
   }
-  // 7. GLOBAL AI WIDGET (Albamen / Albaman)
+  // 7. GLOBAL AI WIDGET (Albamen / Albaman) — текстовый чат
   injectAiWidget();
   ensureAiWidgetPinned();
+  // 8. Голосовой виджет — кнопка + модалка + подключение script.js
   injectVoiceWidget();
-  // --- НОВАЯ ФУНКЦИЯ: Голосовой виджет с подключением script.js ---
+
+  // --- Текстовый чат Albamen (ваш оригинальный код) ---
+  function injectAiWidget() {
+    const path = window.location.pathname || '/';
+    const isEn = path.startsWith('/eng/');
+    const strings = isEn ? {
+      placeholder: 'Send a message...',
+      listening: 'Listening...',
+      connect: 'Connecting...',
+      initialStatus: 'How can I help you today?',
+      welcomeBack: 'Welcome back, ',
+      voiceNotSupported: 'Voice not supported',
+      connectionError: 'Connection error.'
+    } : {
+      placeholder: 'Bir mesaj yazın...',
+      listening: 'Dinliyorum...',
+      connect: 'Bağlanıyor...',
+      initialStatus: 'Bugün sana nasıl yardım edebilirim?',
+      welcomeBack: 'Tekrar hoş geldin, ',
+      voiceNotSupported: 'Ses desteği yok',
+      connectionError: 'Bağlantı hatası.'
+    };
+
+    const storedName = localStorage.getItem('albamen_user_name');
+    if (storedName) {
+      strings.initialStatus = strings.welcomeBack + storedName + '! 🚀';
+    }
+
+    if (document.getElementById('ai-floating-global')) return;
+
+    const floating = document.createElement('div');
+    floating.className = 'ai-floating';
+    floating.id = 'ai-floating-global';
+    const avatarSrc = '/assets/images/albamenai.jpg';
+    floating.innerHTML = `
+      <div class="ai-hero-avatar" id="ai-avatar-trigger">
+        <img src="${avatarSrc}" alt="Albamen AI">
+      </div>
+    `;
+    document.body.appendChild(floating);
+
+    const panel = document.createElement('div');
+    panel.className = 'ai-panel-global';
+    panel.innerHTML = `
+      <div class="ai-panel-header">
+        <button class="ai-close-icon" id="ai-close-btn">×</button>
+      </div>
+      <div class="ai-panel-body">
+        <div class="ai-messages-list" id="ai-messages-list"></div>
+        <div class="ai-chat-avatar-large"><img src="${avatarSrc}" alt="Albamen"></div>
+        <div class="ai-status-text" id="ai-status-text">${strings.initialStatus}</div>
+        <div class="ai-input-area">
+          <button class="ai-action-btn ai-mic-btn-panel" id="ai-mic-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+          </button>
+          <input type="text" class="ai-input" id="ai-input-field" placeholder="${strings.placeholder}">
+          <button class="ai-action-btn ai-send-btn-panel" id="ai-send-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(panel);
+
+    const avatarTrigger = document.getElementById('ai-avatar-trigger');
+    const closeBtn = document.getElementById('ai-close-btn');
+    const sendBtn = document.getElementById('ai-send-btn');
+    const micBtn = document.getElementById('ai-mic-btn');
+    const inputField = document.getElementById('ai-input-field');
+    const msgList = document.getElementById('ai-messages-list');
+    const statusText = document.getElementById('ai-status-text');
+
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    const recognition = SpeechRec ? new SpeechRec() : null;
+    let isListening = false;
+
+    const openPanel = () => panel.classList.add('ai-open');
+    const closePanel = () => {
+      panel.classList.remove('ai-open');
+      panel.classList.remove('chat-active');
+      statusText.style.display = 'block';
+    };
+
+    avatarTrigger.addEventListener('click', openPanel);
+    closeBtn.addEventListener('click', closePanel);
+
+    function addMessage(text, type, id = null) {
+      const div = document.createElement('div');
+      div.className = `ai-msg ${type}`;
+      div.textContent = text;
+      if (id) div.id = id;
+      msgList.appendChild(div);
+      msgList.scrollTop = msgList.scrollHeight;
+    }
+
+    function sendMessage() {
+      const txt = inputField.value.trim();
+      if (!txt) return;
+      panel.classList.add('chat-active');
+      addMessage(txt, 'user');
+      inputField.value = '';
+      const loadingId = 'loading-' + Date.now();
+      addMessage('...', 'bot', loadingId);
+      statusText.textContent = strings.connect;
+      statusText.style.display = 'block';
+
+      const workerUrl = 'https://divine-flower-a0ae.nncdedcg.workers.dev';
+      fetch(workerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: txt,
+          savedName: localStorage.getItem('albamen_user_name'),
+          savedAge: localStorage.getItem('albamen_user_age')
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const loader = document.getElementById(loadingId);
+        if (loader) loader.remove();
+        if (data.reply) {
+          let finalReply = data.reply;
+          const nameMatch = finalReply.match(/<SAVE_NAME:(.*?)>/);
+          if (nameMatch) {
+            const newName = nameMatch[1].trim();
+            localStorage.setItem('albamen_user_name', newName);
+            finalReply = finalReply.replace(nameMatch[0], '');
+          }
+          const ageMatch = finalReply.match(/<SAVE_AGE:(.*?)>/);
+          if (ageMatch) {
+            const newAge = ageMatch[1].trim();
+            localStorage.setItem('albamen_user_age', newAge);
+            finalReply = finalReply.replace(ageMatch[0], '');
+          }
+          addMessage(finalReply.trim(), 'bot');
+        } else {
+          addMessage(strings.connectionError, 'bot');
+        }
+      })
+      .catch(err => {
+        console.error("AI Error:", err);
+        const loader = document.getElementById(loadingId);
+        if (loader) loader.remove();
+        addMessage(strings.connectionError, 'bot');
+      });
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    inputField.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    micBtn.addEventListener('click', () => {
+      if (!recognition) {
+        statusText.textContent = strings.voiceNotSupported;
+        statusText.style.display = 'block';
+        return;
+      }
+      if (isListening) {
+        recognition.stop();
+        return;
+      }
+      panel.classList.add('chat-active');
+      statusText.textContent = strings.listening;
+      statusText.style.display = 'block';
+      inputField.focus();
+      recognition.lang = isEn ? 'en-US' : 'tr-TR';
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      isListening = true;
+      recognition.start();
+    });
+
+    if (recognition) {
+      recognition.addEventListener('result', (event) => {
+        const transcript = Array.from(event.results)
+          .map(res => res[0].transcript)
+          .join(' ')
+          .trim();
+        if (transcript) {
+          inputField.value = transcript;
+        }
+      });
+      recognition.addEventListener('end', () => {
+        isListening = false;
+        statusText.textContent = strings.initialStatus;
+      });
+      recognition.addEventListener('error', () => {
+        isListening = false;
+        statusText.textContent = strings.voiceNotSupported;
+      });
+    }
+  }
+
+  // === Голосовой виджет (кнопка + модалка + подключение script.js) ===
   function injectVoiceWidget() {
     const path = window.location.pathname || '/';
     const isEn = path.startsWith('/eng/');
@@ -181,7 +376,7 @@ runAfterDomReady(() => {
       error: 'Ses desteği yok'
     };
 
-    // Инъекция CSS для голосового виджета (оставляем ваш оригинальный CSS)
+    // Инъекция CSS для голосового виджета
     if (!document.getElementById('ai-voice-style')) {
       const style = document.createElement('style');
       style.id = 'ai-voice-style';
@@ -245,15 +440,28 @@ runAfterDomReady(() => {
     `;
     document.body.appendChild(voicePanel);
 
-    // === ПОДКЛЮЧЕНИЕ ВАШЕГО script.js ===
+    // === ПОДКЛЮЧЕНИЕ script.js (логика голоса) ===
     if (!document.getElementById('albamen-voice-script')) {
       const voiceScript = document.createElement('script');
-      voiceScript.src = '/assets/js/script.js'; // Путь к вашему файлу с логикой WebSocket
+      voiceScript.src = '/assets/js/script.js';
       voiceScript.id = 'albamen-voice-script';
       voiceScript.defer = true;
       document.body.appendChild(voiceScript);
-      console.log('Голосовой скрипт Albamen подключён: /assets/js/script.js');
     }
+  }
+
+  function ensureAiWidgetPinned() {
+    const floating = document.getElementById('ai-floating-global');
+    if (!floating) return;
+    const keepInBody = () => {
+      if (floating.parentElement !== document.body) {
+        document.body.appendChild(floating);
+      }
+      floating.classList.remove('footer-docked');
+    };
+    keepInBody();
+    const observer = new MutationObserver(() => keepInBody());
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 }); // END runAfterDomReady
 
@@ -266,11 +474,7 @@ function runAfterDomReady(fn) {
   }
 }
 
-// Остальные функции (injectAnalytics, injectModelViewerStyles и т.д.) остаются без изменений
-// (я их не трогаю, чтобы файл остался полностью функциональным)
-
 function injectAnalytics() {
-  // --- 1. Google Analytics (G-FV3RXWJ5PQ) ---
   if (!document.querySelector('script[src*="googletagmanager"]')) {
     const gScript = document.createElement('script');
     gScript.async = true;
@@ -280,9 +484,7 @@ function injectAnalytics() {
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     gtag('config', 'G-FV3RXWJ5PQ');
-    console.log("Google Analytics Injected");
   }
-  // --- 2. Yandex Metrika (105726731) ---
   if (!window.ym) {
     (function(m,e,t,r,i,k,a){
         m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
@@ -300,7 +502,6 @@ function injectAnalytics() {
         webvisor:true,
         ecommerce:"dataLayer"
     });
-    console.log("Yandex Metrika Injected");
   }
 }
 
