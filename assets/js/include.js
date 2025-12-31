@@ -261,7 +261,7 @@ runAfterDomReady(() => {
       statusText.textContent = strings.connect;
       statusText.style.display = 'block';
 
-      const workerUrl = 'https://https://albaspace.com.tr/api/chat';
+      const workerUrl = 'https://albaspace.com.tr/api/chat';
       fetch(workerUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
