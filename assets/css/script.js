@@ -5,14 +5,22 @@ let ws = null;
 let mediaRecorder = null;
 let stream = null;
 
-const voiceBtn = document.querySelector('.ai-call-btn'); // ваша кнопка вызова
+//
+// Кнопка вызова голосового чата
+//
+// Изначальный код искал кнопку по классу `.ai-call-btn`, однако в текущей
+// реализации виджет кнопка имеет класс `ai-voice-btn`.  Чтобы поддержать
+// оба варианта (старый и новый), выбираем сначала `.ai-voice-btn`, а если
+// её нет, то используем `.ai-call-btn` для обратной совместимости.
+const voiceBtn = document.querySelector('.ai-voice-btn') || document.querySelector('.ai-call-btn');
 const voiceModal = document.querySelector('.ai-panel-voice'); // модальное окно
 const avatarImg = voiceModal?.querySelector('.ai-chat-avatar-large img'); // аватар для свечения
 const closeBtn = voiceModal?.querySelector('.ai-close-icon'); // кнопка закрытия (X)
 
 if (voiceBtn && voiceModal) {
   voiceBtn.addEventListener('click', async () => {
-    voiceModal.classList.add('ai-open'); // открываем модалку
+    // Открываем модалку
+    voiceModal.classList.add('ai-open');
 
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
