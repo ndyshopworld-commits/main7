@@ -1,5 +1,5 @@
 // URL вашего голосового Worker'а (замените на реальный!)
-const VOICE_WORKER_URL = 'wss://divine-flower-a0ae.nncdedcg.workers.dev/voice'; // пример, укажите точный
+const VOICE_WORKER_URL = 'wss://albamen-voice.nncdecdgc.workers.dev'; // пример, укажите точный
 
 let ws = null;
 let mediaRecorder = null;
