@@ -261,7 +261,7 @@ runAfterDomReady(() => {
       statusText.textContent = strings.connect;
       statusText.style.display = 'block';
 
-      const workerUrl = 'https://albaspace.com.tr/api/chat';
+      const workerUrl = 'https://divine-flower-a0ae.nncdedcg.workers.dev';
       fetch(workerUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
