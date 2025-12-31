@@ -1,8 +1,40 @@
+
 /* БАЗОВЫЕ НАСТРОЙКИ
    (НЕ трогаем background и color, чтобы страницы сами их задавали) */
 body{
   margin:0;
   font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  /*
+   * Mobile Safari fix for stretched background
+   *
+   * Many pages of the site set a custom background on the <body> element via
+   * inline styles like:
+   *   background: #020617 url("/assets/images/space-bg.jpg") center/cover fixed no-repeat;
+   * On iOS (Safari on iPhone/iPad) the `fixed` background-attachment is not
+   * supported and causes the image to zoom and distort.  To fix this we
+   * override the `background-attachment` property on small screens to use
+   * the default scrolling behaviour.  On larger screens we explicitly
+   * restore the `fixed` attachment so the desktop experience remains
+   * unchanged.  See documentation:
+   *   - Medium article explaining that `background-attachment: scroll` is
+   *     required on mobile Safarihttps://medium.com/@roberthaylor/background-images-not-showing-in-mobile-safari-try-this-b4fa3ed208f2#:~:text=Further%20research%20revealed%20that%20in,size%20as%20cover.
+   *   - Kriesi support thread noting iOS devices do not support fixed backgroundshttps://kriesi.at/support/topic/ios-do-not-support-fixed-backgrounds/#:~:text=Participant.
+   */
+}
+
+/* Fix background attachment on mobile devices */
+@media (max-width: 767px) {
+  body {
+    /* Force scrolling attachment to prevent zoom/stretch on iOS */
+    background-attachment: scroll !important;
+  }
+}
+
+/* Restore fixed background on larger screens (desktop/tablet) */
+@media (min-width: 768px) {
+  body {
+    background-attachment: fixed !important;
+  }
 }
 
 /* =========================
